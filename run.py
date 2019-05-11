@@ -14,36 +14,36 @@ session = requests.session()
 
 # First, get login page for hidden params
 print("Getting login page")
-getLoginService = session.get("https://login.manchester.ac.uk/cas/login")
+get_login_service = session.get("https://login.manchester.ac.uk/cas/login")
 
 # Check status code valid
-if getLoginService.status_code != 200:
-    print("Could not get login page: service responded with status code", getLoginService.status_code)
+if get_login_service.status_code != 200:
+    print("Could not get login page: service responded with status code", get_login_service.status_code)
     sys.exit(1)
 
 # Status code valid, parse HTML
-getLoginSoup = BeautifulSoup(getLoginService.content, features="html.parser")
-param_execution = getLoginSoup.find("input", {"name": "execution"})["value"]
-param_lt = getLoginSoup.find("input", {"name": "lt"})["value"]
+get_login_soup = BeautifulSoup(get_login_service.content, features="html.parser")
+param_execution = get_login_soup.find("input", {"name": "execution"})["value"]
+param_lt = get_login_soup.find("input", {"name": "lt"})["value"]
 
 # Send login request
 print("Logging on")
-postLoginService = session.post("https://login.manchester.ac.uk/cas/login",
-                                {"username": settings.username,
-                                 "password": settings.password,
-                                 "lt": param_lt,
-                                 "execution": param_execution,
-                                 "_eventId": "submit",
-                                 "submit": "Login"})
+post_login_service = session.post("https://login.manchester.ac.uk/cas/login",
+                                  {"username": settings.username,
+                                   "password": settings.password,
+                                   "lt": param_lt,
+                                   "execution": param_execution,
+                                   "_eventId": "submit",
+                                   "submit": "Login"})
 
 # Check status code valid
-if postLoginService.status_code != 200:
-    print("Could not log in: service responded with status code", postLoginService.status_code)
+if post_login_service.status_code != 200:
+    print("Could not log in: service responded with status code", post_login_service.status_code)
     sys.exit(2)
 
 # Status code valid, parse HTML
-postLoginSoup = BeautifulSoup(postLoginService.content, features="html.parser")
-login_result_div = postLoginSoup.find("div", {"id": "msg"})
+post_login_soup = BeautifulSoup(post_login_service.content, features="html.parser")
+login_result_div = post_login_soup.find("div", {"id": "msg"})
 
 # Check if login successful
 if "errors" in login_result_div["class"]:
@@ -54,29 +54,29 @@ if "errors" in login_result_div["class"]:
 
 # Get list of courses from video page
 print("Getting course list")
-getVideoServiceBase = session.get("https://video.manchester.ac.uk/lectures")
+get_video_service_base = session.get("https://video.manchester.ac.uk/lectures")
 
 # Check status code valid
-if getVideoServiceBase.status_code != 200:
-    print("Could not get video service: service responded with status code", getVideoServiceBase.status_code)
+if get_video_service_base.status_code != 200:
+    print("Could not get video service: service responded with status code", get_video_service_base.status_code)
     sys.exit(4)
 
 # Status code valid, parse HTML
-getVideoServiceBaseSoup = BeautifulSoup(getVideoServiceBase.content, features="html.parser")
+get_video_service_base_soup = BeautifulSoup(get_video_service_base.content, features="html.parser")
 first = True
-for course_li in getVideoServiceBaseSoup.find("nav", {"id": "sidebar-nav"}).ul.contents[3].find_all("li", {
+for course_li in get_video_service_base_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[3].find_all("li", {
         "class": "series"}):
     # For each course
 
     if first:
         first = False
         print("Getting podcasts for", course_li.a.string)
-        getVideoServiceCourse = session.get("https://video.manchester.ac.uk" + course_li.a["href"])
+        get_video_service_course = session.get("https://video.manchester.ac.uk" + course_li.a["href"])
 
         # Check status code valid
-        if getVideoServiceCourse.status_code != 200:
+        if get_video_service_course.status_code != 200:
             print("Could not get podcasts for", course_li.a.string, "- Service responded with status code",
-                  getVideoServiceCourse.status_code)
+                  get_video_service_course.status_code)
             continue
 
         # Success code valid, create directory for podcasts
@@ -85,18 +85,18 @@ for course_li in getVideoServiceBaseSoup.find("nav", {"id": "sidebar-nav"}).ul.c
         os.makedirs(course_dir, exist_ok=True)
 
         # Parse HTML
-        getVideoServiceCourseSoup = BeautifulSoup(getVideoServiceCourse.content, features="html.parser")
-        podcasts = getVideoServiceCourseSoup.find("nav", {"id": "sidebar-nav"}).ul.contents[5].find_all("li", {
-                "class": "episode"})
-        podcastNo = len(podcasts) + 1
+        get_video_service_course_soup = BeautifulSoup(get_video_service_course.content, features="html.parser")
+        podcasts = get_video_service_course_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[5].find_all("li", {
+            "class": "episode"})
+        podcast_no = len(podcasts) + 1
         for podcast_li in podcasts:
             # For each podcast
-            podcastNo -= 1
+            podcast_no -= 1
 
             # Check podcast not already downloaded
-            downloadPath = os.path.expanduser(os.path.join(course_dir, f"{podcastNo:02d} - " + podcast_li.a.string +
-                                                           ".mp4"))
-            if os.path.isfile(downloadPath):
+            download_path = os.path.expanduser(os.path.join(course_dir, f"{podcast_no:02d} - " + podcast_li.a.string +
+                                                            ".mp4"))
+            if os.path.isfile(download_path):
                 print("Skipping podcast", podcast_li.a.string, "(already exists)")
                 continue
 
@@ -104,29 +104,30 @@ for course_li in getVideoServiceBaseSoup.find("nav", {"id": "sidebar-nav"}).ul.c
             print("Getting podcast", podcast_li.a.string)
 
             # Get podcast webpage
-            getVideoServicePodcastPage = session.get("https://video.manchester.ac.uk" + podcast_li.a["href"])
+            get_video_service_podcast_page = session.get("https://video.manchester.ac.uk" + podcast_li.a["href"])
 
             # Check status code valid
-            if getVideoServicePodcastPage.status_code != 200:
+            if get_video_service_podcast_page.status_code != 200:
                 print("Could not get podcast webpage for", podcast_li.a.string, "- Service responded with status code",
-                      getVideoServicePodcastPage.status_code)
+                      get_video_service_podcast_page.status_code)
                 continue
 
             # Status code valid, parse HTML
-            getVideoServicePodcastPageSoup = BeautifulSoup(getVideoServicePodcastPage.content, features="html.parser")
-            podcast_src = "https://video.manchester.ac.uk" +\
+            getVideoServicePodcastPageSoup = BeautifulSoup(get_video_service_podcast_page.content,
+                                                           features="html.parser")
+            podcast_src = "https://video.manchester.ac.uk" + \
                           getVideoServicePodcastPageSoup.find("video", id="video").source["src"]
 
             # Get podcast
-            getVideoServicePodcast = session.get(podcast_src, stream=True)
+            get_video_service_podcast = session.get(podcast_src, stream=True)
 
             # Check status code valid
-            if getVideoServicePodcast.status_code != 200:
+            if get_video_service_podcast.status_code != 200:
                 print("Could not get podcast for", podcast_li.a.string, "- Service responded with status code",
-                      getVideoServicePodcastPage.status_code)
+                      get_video_service_podcast_page.status_code)
                 continue
 
             # Write to file
-            with open(downloadPath, "wb") as f:
-                getVideoServicePodcast.raw.decode_content = True
-                shutil.copyfileobj(getVideoServicePodcast.raw, f)
+            with open(download_path, "wb") as f:
+                get_video_service_podcast.raw.decode_content = True
+                shutil.copyfileobj(get_video_service_podcast.raw, f)
