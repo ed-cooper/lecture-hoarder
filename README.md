@@ -18,7 +18,7 @@ base_dir = "~/Documents/Lectures" # Where to download files to
 
 Then, install the packages listed in [requirements.txt](requirements.txt).
 
-Finally, execute the file called [run.py](run.py).
+Finally, execute the file called [run.py](run.py) *(requires Python 3.6+)*.
 
 Podcasts take a long time to download, so expect the first run to take over an hour
 to complete.
