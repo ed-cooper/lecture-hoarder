@@ -45,13 +45,27 @@ if "errors" in login_result_div["class"]:
 # Login successful
 
 # Get list of courses from video page
-getVideoServiceBase = session.get("https://video.manchester.ac.uk/?login")
+getVideoServiceBase = session.get("https://video.manchester.ac.uk/lectures")
 
 # Check status code valid
 if getVideoServiceBase.status_code != 200:
     print("Could not get video service: service responded with status code", getVideoServiceBase.status_code)
     sys.exit(4)
 
-# Print result
+# Status code valid, parse HTML
 getVideoServiceBaseSoup = BeautifulSoup(getVideoServiceBase.content, features="html.parser")
-print(getVideoServiceBaseSoup.prettify())
+first = True
+for course_li in getVideoServiceBaseSoup.find("nav", {"id": "sidebar-nav"}).ul.contents[3].find_all("li", {"class": "series"}):
+    if first:
+        first = False
+        getVideoServiceCourse = session.get("https://video.manchester.ac.uk" + course_li.a["href"])
+
+        # Check status code valid
+        if getVideoServiceCourse.status_code != 200:
+            print("Could not get lectures for course", course_li.a.string, "- Service responded with status code", getVideoServiceCourse.status_code)
+            continue
+
+        # Success code valid, parse HTML
+        getVideoServiceCourseSoup = BeautifulSoup(getVideoServiceCourse.content, features="html.parser")
+        for podcast_li in getVideoServiceCourseSoup.find("nav", {"id": "sidebar-nav"}).ul.contents[5].find_all("li", {"class": "episode"}):
+            print(podcast_li.a.string)
