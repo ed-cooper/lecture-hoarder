@@ -90,10 +90,13 @@ def download_podcast(name, podcast_link, download_path):
               get_video_service_podcast.status_code)
         return
 
-    # Write to file
-    with open(download_path, "wb") as f:
+    # Write to file with partial extension
+    with open(download_path + ".partial", "wb") as f:
         get_video_service_podcast.raw.decode_content = True
         shutil.copyfileobj(get_video_service_podcast.raw, f)
+
+    # Rename completed file
+    os.rename(download_path + ".partial", download_path)
 
     print("Downloaded podcast", name)
 
