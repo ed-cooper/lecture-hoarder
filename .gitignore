@@ -59,5 +59,7 @@ target/
 
 # PyCharms
 .idea
+venv
 
 # Other
+settings.py
