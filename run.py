@@ -67,7 +67,9 @@ first = True
 for course_li in get_video_service_base_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[3].find_all("li", {
         "class": "series"}):
     # For each course
+    print("-" * (21 + len(course_li.a.string)))
     print("Getting podcasts for", course_li.a.string)
+    print("-" * (21 + len(course_li.a.string)))
     get_video_service_course = session.get("https://video.manchester.ac.uk" + course_li.a["href"])
 
     # Check status code valid
