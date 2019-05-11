@@ -63,8 +63,23 @@ if get_video_service_base.status_code != 200:
     sys.exit(4)
 
 
-def download_podcast(name, podcast_src, download_path):
+def download_podcast(name, podcast_link, download_path):
     print("Downloading podcast", name)
+
+    # Get podcast webpage
+    get_video_service_podcast_page = session.get("https://video.manchester.ac.uk" + podcast_link)
+
+    # Check status code valid
+    if get_video_service_podcast_page.status_code != 200:
+        print("Could not get podcast webpage for", name, "- Service responded with status code",
+              get_video_service_podcast_page.status_code)
+        return
+
+    # Status code valid, parse HTML
+    getVideoServicePodcastPageSoup = BeautifulSoup(get_video_service_podcast_page.content,
+                                                   features="html.parser")
+    podcast_src = "https://video.manchester.ac.uk" + \
+                  getVideoServicePodcastPageSoup.find("video", id="video").source["src"]
 
     # Get podcast
     get_video_service_podcast = session.get(podcast_src, stream=True)
@@ -127,23 +142,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
             # Podcast not yet downloaded
             print("Queuing podcast", podcast_li.a.string)
 
-            # Get podcast webpage
-            get_video_service_podcast_page = session.get("https://video.manchester.ac.uk" + podcast_li.a["href"])
-
-            # Check status code valid
-            if get_video_service_podcast_page.status_code != 200:
-                print("Could not get podcast webpage for", podcast_li.a.string, "- Service responded with status code",
-                      get_video_service_podcast_page.status_code)
-                continue
-
-            # Status code valid, parse HTML
-            getVideoServicePodcastPageSoup = BeautifulSoup(get_video_service_podcast_page.content,
-                                                           features="html.parser")
-            podcast_src = "https://video.manchester.ac.uk" + \
-                          getVideoServicePodcastPageSoup.find("video", id="video").source["src"]
-
             # Queue podcast for downloading
-            futures.append(executor.submit(download_podcast, podcast_li.a.string, podcast_src, download_path))
+            futures.append(executor.submit(download_podcast, podcast_li.a.string, podcast_li.a["href"], download_path))
 
     # Wait for all queued podcasts to download
     for idx, future in enumerate(concurrent.futures.as_completed(futures)):
