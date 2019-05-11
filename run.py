@@ -86,12 +86,16 @@ for course_li in getVideoServiceBaseSoup.find("nav", {"id": "sidebar-nav"}).ul.c
 
         # Parse HTML
         getVideoServiceCourseSoup = BeautifulSoup(getVideoServiceCourse.content, features="html.parser")
-        for podcast_li in getVideoServiceCourseSoup.find("nav", {"id": "sidebar-nav"}).ul.contents[5].find_all("li", {
-                "class": "episode"}):
+        podcasts = getVideoServiceCourseSoup.find("nav", {"id": "sidebar-nav"}).ul.contents[5].find_all("li", {
+                "class": "episode"})
+        podcastNo = len(podcasts) + 1
+        for podcast_li in podcasts:
             # For each podcast
+            podcastNo -= 1
 
             # Check podcast not already downloaded
-            downloadPath = os.path.expanduser(os.path.join(course_dir, podcast_li.a.string + ".mp4"))
+            downloadPath = os.path.expanduser(os.path.join(course_dir, f"{podcastNo:02d} - " + podcast_li.a.string +
+                                                           ".mp4"))
             if os.path.isfile(downloadPath):
                 print("Skipping podcast", podcast_li.a.string, "(already exists)")
                 continue
@@ -110,13 +114,14 @@ for course_li in getVideoServiceBaseSoup.find("nav", {"id": "sidebar-nav"}).ul.c
 
             # Status code valid, parse HTML
             getVideoServicePodcastPageSoup = BeautifulSoup(getVideoServicePodcastPage.content, features="html.parser")
-            podcast_src = "https://video.manchester.ac.uk" + getVideoServicePodcastPageSoup.find("video", id="video").source["src"]
+            podcast_src = "https://video.manchester.ac.uk" +\
+                          getVideoServicePodcastPageSoup.find("video", id="video").source["src"]
 
             # Get podcast
             getVideoServicePodcast = session.get(podcast_src, stream=True)
 
             # Check status code valid
-            if getVideoServicePodcast.status_code != 200: # Good response will always be 302 FOUND
+            if getVideoServicePodcast.status_code != 200:
                 print("Could not get podcast for", podcast_li.a.string, "- Service responded with status code",
                       getVideoServicePodcastPage.status_code)
                 continue
