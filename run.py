@@ -3,8 +3,11 @@ import settings
 import sys
 from bs4 import BeautifulSoup
 
+# Create cookie session
+session = requests.session()
+
 # First, get login page for hidden params
-getLoginService = requests.get("https://login.manchester.ac.uk/cas/login")
+getLoginService = session.get("https://login.manchester.ac.uk/cas/login")
 
 # Check status code valid
 if getLoginService.status_code != 200:
@@ -17,7 +20,7 @@ param_execution = getLoginSoup.find("input", {"name": "execution"})["value"]
 param_lt = getLoginSoup.find("input", {"name": "lt"})["value"]
 
 # Send login request
-postLoginService = requests.post("https://login.manchester.ac.uk/cas/login",
+postLoginService = session.post("https://login.manchester.ac.uk/cas/login",
                                  {"username": settings.username,
                                   "password": settings.password,
                                   "lt": param_lt,
@@ -42,7 +45,7 @@ if "errors" in login_result_div["class"]:
 # Login successful
 
 # Get list of courses from video page
-getVideoServiceBase = requests.get("https://video.manchester.ac.uk/")
+getVideoServiceBase = session.get("https://video.manchester.ac.uk/?login")
 
 # Check status code valid
 if getVideoServiceBase.status_code != 200:
