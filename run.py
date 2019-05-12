@@ -95,6 +95,9 @@ def format_size(size_in_bytes):
 # Downloads a podcast using the href and a target location.
 # Logging messages will use the name to identify which podcast download request it is related to.
 def download_podcast(podcast):
+    # Set starting status
+    podcast["status"] = "starting"
+
     # Get podcast webpage
     get_video_service_podcast_page = session.get(settings["video_service_base_url"] + podcast["podcast_link"])
 
@@ -219,6 +222,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
                     (" " * (settings["progress_bar_size"] - percent)) + "] " + \
                     str(format_size(download["progress"])).rjust(6) + " / " + \
                     str(format_size(download["total_size"])) + "\n"
+            elif download["status"] == "starting":
+                output += ": Starting" + "\n"
             elif download["status"] == "waiting":
                 output += ": Waiting" + "\n"
             elif download["status"] == "complete":
