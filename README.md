@@ -15,11 +15,14 @@ Please remember to back your files up regularly.
 
 ## Usage
 
-First, copy the file `lecture-hoarder-settings.template.yaml` to `~/lecture-hoarder-settings.yaml`
+First, copy the file `lecture-hoarder-settings.template.yaml` to `~/lecture-hoarder-settings.yaml`:
+```bash
+cp lecture-hoarder-settings.template.yaml ~/lecture-hoarder-settings.yaml
+```
 
-The file contains sensible default settings for Linux, and podcasts are saved to `~/Documents/Lectures`.
+Lecture Hoarder comes with sensible default settings for Linux. By default, podcasts are saved to `~/Documents/Lectures`.
 
-If you wish to customise it, please see [the wiki page](https://github.com/ed-cooper/lecture-hoarder/wiki/Lecture-Hoarder-Configuration).
+For more configuration options, please see [the wiki page](https://github.com/ed-cooper/lecture-hoarder/wiki/Lecture-Hoarder-Configuration).
 
 Here are some notable settings:
 ```yaml
@@ -27,10 +30,18 @@ auto_login: No                   # Whether to use username and password from set
 username: ""                     # The username you would usually use for My Manchester
 password: ""                     # The accompanying password
 base_dir: "~/Documents/Lectures" # Where to download files to
+exclude: ""                      # Case-sensitive regular expression; course names matching this will be ignored
 ```
-Then, install the packages listed in [requirements.txt](requirements.txt).
+Then, install the packages listed in [requirements.txt](requirements.txt):
 
-Finally, execute the file called [run.py](run.py) *(requires Python 3.6+)*.
+```bash
+pip install -r reqirements.txt
+```
+
+Finally, execute the file called [run.py](run.py) *(requires Python 3.6+)*:
+```bash
+python run.py
+```
 
 Podcasts take a long time to download, so the first run may take a while to complete.
 
