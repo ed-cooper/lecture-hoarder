@@ -10,7 +10,7 @@ import yaml
 from bs4 import BeautifulSoup
 
 # The list of characters that can be used in filenames
-VALID_FILE_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
+VALID_FILE_CHARS = f"-_.() {string.ascii_letters}{string.digits}"
 
 # Get user settings
 settings_path = "settings.yaml"
