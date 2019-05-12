@@ -65,7 +65,7 @@ if get_video_service_base.status_code != 200:
 # Status code valid
 
 
-# Downloads a postcast using the href and a target location.
+# Downloads a podcast using the href and a target location.
 # Logging messages will use the name to identify which podcast download request it is related to.
 def download_podcast(name, podcast_link, download_path):
     print("Downloading podcast", name)
@@ -80,10 +80,10 @@ def download_podcast(name, podcast_link, download_path):
         return
 
     # Status code valid, parse HTML
-    getVideoServicePodcastPageSoup = BeautifulSoup(get_video_service_podcast_page.content,
-                                                   features="html.parser")
+    get_video_service_podcast_page_soup = BeautifulSoup(get_video_service_podcast_page.content,
+                                                        features="html.parser")
     podcast_src = "https://video.manchester.ac.uk" + \
-                  getVideoServicePodcastPageSoup.find("video", id="video").source["src"]
+                  get_video_service_podcast_page_soup.find("video", id="video").source["src"]
 
     # Get podcast
     get_video_service_podcast = session.get(podcast_src, stream=True)
