@@ -27,7 +27,7 @@ param_execution = get_login_soup.find("input", {"name": "execution"})["value"]
 param_lt = get_login_soup.find("input", {"name": "lt"})["value"]
 
 # Send login request
-print("Logging on")
+print("Logging on now")
 post_login_service = session.post("https://login.manchester.ac.uk/cas/login",
                                   {"username": settings.username,
                                    "password": settings.password,
