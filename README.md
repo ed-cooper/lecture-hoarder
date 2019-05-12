@@ -1,6 +1,6 @@
-# Lecture Hoarder
+# Lecture Hoarder [![Build Status](https://travis-ci.com/ed-cooper/lecture-hoarder.svg?branch=master)](https://travis-ci.com/ed-cooper/lecture-hoarder)
 
-Automated tool to scrape the Univeristy of Manchester video portal and download all
+Automated tool to scrape the University of Manchester video portal and download all
 available lecture podcasts for your course.
 
 **Note: Requires valid University of Manchester username and password**
