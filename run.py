@@ -1,10 +1,10 @@
 import concurrent.futures
 import os
 import requests
-import settings
 import string
 import sys
 import time
+import yaml
 from bs4 import BeautifulSoup
 
 # The list of characters that can be used in filenames
@@ -18,6 +18,10 @@ video_base_url = "https://video.manchester.ac.uk"
 
 # The length of progress bars
 progress_bar_size = 30
+
+# Get user settings
+with open("settings.yaml", "r") as stream:
+    settings = yaml.safe_load(stream)
 
 # Create cookie session
 session = requests.session()
@@ -39,8 +43,8 @@ param_lt = get_login_soup.find("input", {"name": "lt"})["value"]
 # Send login request
 print("Logging on")
 post_login_service = session.post(login_url,
-                                  {"username": settings.username,
-                                   "password": settings.password,
+                                  {"username": settings["username"],
+                                   "password": settings["password"],
                                    "lt": param_lt,
                                    "execution": param_execution,
                                    "_eventId": "submit",
@@ -132,7 +136,7 @@ def download_podcast(podcast):
     podcast["status"] = "complete"
 
 
-with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
+with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_downloads"]) as executor:
     futures = []
 
     # Parse HTML
@@ -153,7 +157,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
             continue
 
         # Success code valid, create directory for podcasts
-        course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course_li.a.string)))
+        course_dir = os.path.expanduser(os.path.join(settings["base_dir"], filter_path_name(course_li.a.string)))
         os.makedirs(course_dir, exist_ok=True)
 
         # Parse HTML

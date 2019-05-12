@@ -15,14 +15,14 @@ Please remember to back your files up regularly.
 
 ## Usage
 
-First, copy the file `settings-template.py` to `settings.py`
+First, copy the file `settings.template.yaml` to `settings.yaml`
 
 Then, open it in your editor of your choice, and set the following 4 variables:
-```python
-username = "Your username"        # The username you would usually use for My Manchester
-password = "Your password"        # The accompanying password
-base_dir = "~/Documents/Lectures" # Where to download files to
-concurrent_downloads = 4          # How many podcasts to download at the same time (Increases speed)
+```yaml
+username: "Your username"        # The username you would usually use for My Manchester
+password: "Your password"        # The accompanying password
+base_dir: "~/Documents/Lectures" # Where to download files to
+concurrent_downloads: 4          # How many podcasts to download at the same time (Increases speed)
 ```
 
 Then, install the packages listed in [requirements.txt](requirements.txt).
