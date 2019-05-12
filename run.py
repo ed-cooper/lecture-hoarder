@@ -99,13 +99,17 @@ def download_podcast(podcast):
               get_video_service_podcast.status_code)
         return
 
+    # Get download size
     print("Downloading", podcast['name'],
           f"[{round(int(get_video_service_podcast.headers['Content-Length']) / (1000 * 1000))} MB]")
+    podcast["started"] = True
+    podcast["total_size"] = get_video_service_podcast.headers['Content-Length']
 
     # Write to file with partial extension
     with open(podcast["download_path"] + ".partial", "wb") as f:
-        get_video_service_podcast.raw.decode_content = True
-        shutil.copyfileobj(get_video_service_podcast.raw, f)
+        for chunk in get_video_service_podcast:
+            f.write(chunk)
+            podcast["progress"] += len(chunk)
 
     # Rename completed file
     os.rename(podcast["download_path"] + ".partial", podcast["download_path"])
@@ -160,6 +164,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
             queue.append({"name": podcast_li.a.string,
                           "podcast_link": podcast_li.a["href"],
                           "download_path": download_path,
+                          "started": False,
                           "progress": 0,
                           "total_size": 0})
 
