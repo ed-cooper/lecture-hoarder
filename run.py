@@ -12,7 +12,10 @@ from bs4 import BeautifulSoup
 VALID_FILE_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
 # Get user settings
-with open("settings.yaml", "r") as stream:
+settings_path = "settings.yaml"
+if len(sys.argv) > 1:
+    settings_path = sys.argv[1]  # User has specified custom settings file location
+with open(settings_path, "r") as stream:
     settings = yaml.safe_load(stream)
 
 # Get username and password
