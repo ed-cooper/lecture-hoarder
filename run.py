@@ -161,7 +161,6 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
             print("Ignoring", course_li.a.string)
             continue
 
-
         print("-" * (21 + len(course_li.a.string)))
         print("Getting podcasts for", course_li.a.string)
         print("-" * (21 + len(course_li.a.string)))
