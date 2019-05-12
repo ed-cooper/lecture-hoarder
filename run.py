@@ -16,6 +16,9 @@ login_url = "https://login.manchester.ac.uk/cas/login"
 # The video service base URL
 video_base_url = "https://video.manchester.ac.uk"
 
+# The length of progress bars
+progress_bar_size = 30
+
 # Create cookie session
 session = requests.session()
 
@@ -111,7 +114,7 @@ def download_podcast(podcast):
         return
 
     # Get download size
-    #print("Downloading", podcast['name'],
+    # print("Downloading", podcast['name'],
     #      f"[{format_size(int(get_video_service_podcast.headers['Content-Length']))}]")
     podcast["started"] = True
     podcast["total_size"] = int(get_video_service_podcast.headers['Content-Length'])
@@ -135,7 +138,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
     get_video_service_base_soup = BeautifulSoup(get_video_service_base.content, features="html.parser")
 
     for course_li in get_video_service_base_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[3].find_all("li", {
-            "class": "series"}):
+        "class": "series"}):
         # For each course
         print("-" * (21 + len(course_li.a.string)))
         print("Getting podcasts for", course_li.a.string)
@@ -197,10 +200,15 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
                 complete_downloads += 1
 
         # Output downloads
-        print("\033[" + str(len(queue) + 1) + "A\033[0J")
+        print("\033[" + str(len(queue)) + "A\033[0J\033[1A")
         for download in queue:
-            print(download["name"] + " [" + str(format_size(download["progress"])) + "->" +
-                  str(format_size(download["total_size"]) + "]"))
+            percent = 0
+            if download["total_size"] > 0:
+                percent = round((download["progress"] / download["total_size"]) * progress_bar_size)
+
+            print(download["name"] + " " + str(format_size(download["progress"])).rjust(6) + " [" +
+                  (u"\u2588" * percent) + (" " * (progress_bar_size - percent)) + "] " +
+                  str(format_size(download["total_size"])))
 
         # Wait
         time.sleep(0.3)
