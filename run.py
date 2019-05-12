@@ -65,6 +65,8 @@ if get_video_service_base.status_code != 200:
 # Status code valid
 
 
+# Downloads a postcast using the href and a target location.
+# Logging messages will use the name to identify which podcast download request it is related to.
 def download_podcast(name, podcast_link, download_path):
     print("Downloading podcast", name)
 
