@@ -15,7 +15,7 @@ Please remember to back your files up regularly.
 
 ## Usage
 
-First, copy the file `settings.template.yaml` to `settings.yaml`
+First, copy the file `lecture-hoarder-settings.template.yaml` to `~/lecture-hoarder-settings.yaml`
 
 The file contains sensible default settings for Linux, and podcasts are saved to `~/Documents/Lectures`.
 
