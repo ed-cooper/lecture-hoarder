@@ -4,6 +4,7 @@ import requests
 import settings
 import string
 import sys
+import time
 from bs4 import BeautifulSoup
 
 # The list of characters that can be used in filenames
@@ -78,6 +79,11 @@ def filter_path_name(path):
     return "".join(c for c in path if c in VALID_FILE_CHARS)
 
 
+# Formats a download size as MB
+def format_size(size_in_bytes):
+    return str(round(size_in_bytes / (1000 * 1000))) + " MB"
+
+
 # Downloads a podcast using the href and a target location.
 # Logging messages will use the name to identify which podcast download request it is related to.
 def download_podcast(podcast):
@@ -105,10 +111,10 @@ def download_podcast(podcast):
         return
 
     # Get download size
-    print("Downloading", podcast['name'],
-          f"[{round(int(get_video_service_podcast.headers['Content-Length']) / (1000 * 1000))} MB]")
+    #print("Downloading", podcast['name'],
+    #      f"[{format_size(int(get_video_service_podcast.headers['Content-Length']))}]")
     podcast["started"] = True
-    podcast["total_size"] = get_video_service_podcast.headers['Content-Length']
+    podcast["total_size"] = int(get_video_service_podcast.headers['Content-Length'])
 
     # Write to file with partial extension
     with open(podcast["download_path"] + ".partial", "wb") as f:
@@ -119,7 +125,7 @@ def download_podcast(podcast):
     # Rename completed file
     os.rename(podcast["download_path"] + ".partial", podcast["download_path"])
 
-    print("Downloaded podcast", podcast["name"])
+    # print("Downloaded podcast", podcast["name"])
 
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
@@ -179,9 +185,23 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
     print("--------------------")
     for download in queue:
         futures.append(executor.submit(download_podcast, download))
+        print(download["name"])
 
-    # Wait for all queued podcasts to download
-    for idx, future in enumerate(concurrent.futures.as_completed(futures)):
-        res = future.result()  # This will also raise any exceptions
+    # Loop until all downloads completed
+    complete_downloads = 0
+    while complete_downloads < len(queue):
+        # Check whether there are any remaining downloads
+        complete_downloads = 0
+        for future in futures:
+            if future.done():
+                complete_downloads += 1
+
+        # Output downloads
+        print("\033[" + str(len(queue)) + "A\033[0j")
+        for download in queue:
+            print(download["name"], ":", format_size(download["progress"]), format_size(download["total_size"]))
+
+        # Wait
+        time.sleep(0.3)
 
     print("All downloads completed")
