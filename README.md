@@ -14,7 +14,7 @@ Then, open it in your editor of your choice, and set the following 3 variables:
 username = "Your username"        # The username you would usually use for My Manchester
 password = "Your password"        # The accompanying password
 base_dir = "~/Documents/Lectures" # Where to download files to
-concurrent_downloads = 8          # How many podcasts to download concurrently (Increases speed)
+concurrent_downloads = 4          # How many podcasts to download concurrently (Increases speed)
 ```
 
 Then, install the packages listed in [requirements.txt](requirements.txt).
