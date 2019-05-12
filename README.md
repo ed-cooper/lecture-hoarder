@@ -32,8 +32,7 @@ Then, install the packages listed in [requirements.txt](requirements.txt).
 
 Finally, execute the file called [run.py](run.py) *(requires Python 3.6+)*.
 
-Podcasts take a long time to download, so expect the first run to take over an hour
-to complete.
+Podcasts take a long time to download, so the first run may take a while to complete.
 
 If you interrupt the program while downloading, you may find ```.partial``` files in
 the output directory. They are incomplete downloads and can safely be ignored/deleted.
