@@ -64,6 +64,8 @@ if get_video_service_base.status_code != 200:
 
 # Status code valid
 
+# Create download queue
+queue = []
 
 # Filters all invalid characters from a file path name
 def filter_path_name(path):
@@ -72,15 +74,13 @@ def filter_path_name(path):
 
 # Downloads a podcast using the href and a target location.
 # Logging messages will use the name to identify which podcast download request it is related to.
-def download_podcast(name, podcast_link, download_path):
-    print("Downloading podcast", name)
-
+def download_podcast(podcast):
     # Get podcast webpage
-    get_video_service_podcast_page = session.get("https://video.manchester.ac.uk" + podcast_link)
+    get_video_service_podcast_page = session.get("https://video.manchester.ac.uk" + podcast["podcast_link"])
 
     # Check status code valid
     if get_video_service_podcast_page.status_code != 200:
-        print("Could not get podcast webpage for", name, "- Service responded with status code",
+        print("Could not get podcast webpage for", podcast["name"], "- Service responded with status code",
               get_video_service_podcast_page.status_code)
         return
 
@@ -95,19 +95,22 @@ def download_podcast(name, podcast_link, download_path):
 
     # Check status code valid
     if get_video_service_podcast.status_code != 200:
-        print("Could not get podcast for", name, "- Service responded with status code",
+        print("Could not get podcast for", podcast["name"], "- Service responded with status code",
               get_video_service_podcast.status_code)
         return
 
+    print("Downloading", podcast['name'],
+          f"[{round(int(get_video_service_podcast.headers['Content-Length']) / (1000 * 1000))} MB]")
+
     # Write to file with partial extension
-    with open(download_path + ".partial", "wb") as f:
+    with open(podcast["download_path"] + ".partial", "wb") as f:
         get_video_service_podcast.raw.decode_content = True
         shutil.copyfileobj(get_video_service_podcast.raw, f)
 
     # Rename completed file
-    os.rename(download_path + ".partial", download_path)
+    os.rename(podcast["download_path"] + ".partial", podcast["download_path"])
 
-    print("Downloaded podcast", name)
+    print("Downloaded podcast", podcast["name"])
 
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
@@ -154,8 +157,21 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
             print("Queuing podcast", podcast_li.a.string)
 
             # Queue podcast for downloading
-            futures.append(executor.submit(download_podcast, podcast_li.a.string, podcast_li.a["href"], download_path))
+            queue.append({"name": podcast_li.a.string,
+                          "podcast_link": podcast_li.a["href"],
+                          "download_path": download_path,
+                          "progress": 0,
+                          "total_size": 0})
+
+    # Start downloads
+    print("--------------------")
+    print("Downloading podcasts")
+    print("--------------------")
+    for download in queue:
+        futures.append(executor.submit(download_podcast, download))
 
     # Wait for all queued podcasts to download
     for idx, future in enumerate(concurrent.futures.as_completed(futures)):
         res = future.result()  # This will also raise any exceptions
+
+    print("All downloads completed")
