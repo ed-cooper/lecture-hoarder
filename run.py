@@ -62,6 +62,8 @@ if get_video_service_base.status_code != 200:
     print("Could not get video service: service responded with status code", get_video_service_base.status_code)
     sys.exit(4)
 
+# Status code valid
+
 
 def download_podcast(name, podcast_link, download_path):
     print("Downloading podcast", name)
@@ -101,9 +103,9 @@ def download_podcast(name, podcast_link, download_path):
 with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
     futures = []
 
-    # Status code valid, parse HTML
+    # Parse HTML
     get_video_service_base_soup = BeautifulSoup(get_video_service_base.content, features="html.parser")
-    first = True
+
     for course_li in get_video_service_base_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[3].find_all("li", {
         "class": "series"}):
         # For each course
@@ -148,4 +150,3 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
     # Wait for all queued podcasts to download
     for idx, future in enumerate(concurrent.futures.as_completed(futures)):
         res = future.result()  # This will also raise any exceptions
-
