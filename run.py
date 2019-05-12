@@ -1,3 +1,4 @@
+import concurrent.futures
 import os
 import requests
 import settings
@@ -5,7 +6,6 @@ import shutil
 import string
 import sys
 from bs4 import BeautifulSoup
-import concurrent.futures
 
 # The list of characters that can be used in filenames
 VALID_FILE_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
