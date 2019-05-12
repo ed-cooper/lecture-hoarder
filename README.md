@@ -17,15 +17,17 @@ Please remember to back your files up regularly.
 
 First, copy the file `settings.template.yaml` to `settings.yaml`
 
-Then, open it in your editor of your choice, and change settings as desired:
+The file contains sensible default settings for Linux, and podcasts are saved to `~/Documents/Lectures`.
+
+If you wish to customise it, please see [the wiki page](https://github.com/ed-cooper/lecture-hoarder/wiki/Lecture-Hoarder-Configuration).
+
+Here are some notable settings:
 ```yaml
 auto_login: No                   # Whether to use username and password from settings or standard input
 username: ""                     # The username you would usually use for My Manchester
 password: ""                     # The accompanying password
 base_dir: "~/Documents/Lectures" # Where to download files to
-concurrent_downloads: 4          # How many podcasts to download at the same time (Increases speed)
 ```
-
 Then, install the packages listed in [requirements.txt](requirements.txt).
 
 Finally, execute the file called [run.py](run.py) *(requires Python 3.6+)*.
