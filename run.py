@@ -65,7 +65,12 @@ if get_video_service_base.status_code != 200:
 # Status code valid
 
 
-# Downloads a postcast using the href and a target location.
+# Filters all invalid characters from a file path name
+def filter_path_name(path):
+    return "".join(c for c in path if c in VALID_FILE_CHARS)
+
+
+# Downloads a podcast using the href and a target location.
 # Logging messages will use the name to identify which podcast download request it is related to.
 def download_podcast(name, podcast_link, download_path):
     print("Downloading podcast", name)
@@ -80,10 +85,10 @@ def download_podcast(name, podcast_link, download_path):
         return
 
     # Status code valid, parse HTML
-    getVideoServicePodcastPageSoup = BeautifulSoup(get_video_service_podcast_page.content,
-                                                   features="html.parser")
+    get_video_service_podcast_page_soup = BeautifulSoup(get_video_service_podcast_page.content,
+                                                        features="html.parser")
     podcast_src = "https://video.manchester.ac.uk" + \
-                  getVideoServicePodcastPageSoup.find("video", id="video").source["src"]
+                  get_video_service_podcast_page_soup.find("video", id="video").source["src"]
 
     # Get podcast
     get_video_service_podcast = session.get(podcast_src, stream=True)
@@ -126,8 +131,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
             continue
 
         # Success code valid, create directory for podcasts
-        course_dir = os.path.expanduser(os.path.join(settings.base_dir, "".join(
-            c for c in course_li.a.string if c in VALID_FILE_CHARS)))
+        course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course_li.a.string)))
         os.makedirs(course_dir, exist_ok=True)
 
         # Parse HTML
@@ -140,8 +144,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
             podcast_no -= 1
 
             # Check podcast not already downloaded
-            download_path = os.path.expanduser(os.path.join(course_dir, f"{podcast_no:02d} - " + podcast_li.a.string +
-                                                            ".mp4"))
+            download_path = os.path.expanduser(os.path.join(course_dir, f"{podcast_no:02d} - " +
+                                                            filter_path_name(podcast_li.a.string) + ".mp4"))
             if os.path.isfile(download_path):
                 print("Skipping podcast", podcast_li.a.string, "(already exists)")
                 continue
