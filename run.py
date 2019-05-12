@@ -128,6 +128,9 @@ def download_podcast(podcast):
     # Rename completed file
     os.rename(podcast["download_path"] + ".partial", podcast["download_path"])
 
+    # Mark as complete
+    podcast["status"] = "complete"
+
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
     futures = []
@@ -211,6 +214,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
                       " / " + str(format_size(download["total_size"])))
             elif download["status"] == "waiting":
                 print(download["name"] + ": Waiting")
+            elif download["status"] == "complete":
+                print(download["name"] + ": Complete")
             elif download["status"] == "error":
                 print(download["name"] + ": Error: " + download["error"])
             else:
