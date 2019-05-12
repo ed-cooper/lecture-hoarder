@@ -1,4 +1,5 @@
 import concurrent.futures
+import getpass
 import os
 import requests
 import string
@@ -23,6 +24,15 @@ progress_bar_size = 30
 with open("settings.yaml", "r") as stream:
     settings = yaml.safe_load(stream)
 
+# Get username and password
+
+if settings["auto_login"]:
+    username = settings["username"]
+    password = settings["password"]
+else:
+    username = input("Please enter your username: ")
+    password = getpass.getpass("Please enter your password: ")
+
 # Create cookie session
 session = requests.session()
 
@@ -43,8 +53,8 @@ param_lt = get_login_soup.find("input", {"name": "lt"})["value"]
 # Send login request
 print("Logging on")
 post_login_service = session.post(login_url,
-                                  {"username": settings["username"],
-                                   "password": settings["password"],
+                                  {"username": username,
+                                   "password": password,
                                    "lt": param_lt,
                                    "execution": param_execution,
                                    "_eventId": "submit",

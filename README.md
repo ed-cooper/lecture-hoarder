@@ -17,10 +17,11 @@ Please remember to back your files up regularly.
 
 First, copy the file `settings.template.yaml` to `settings.yaml`
 
-Then, open it in your editor of your choice, and set the following 4 variables:
+Then, open it in your editor of your choice, and change settings as desired:
 ```yaml
-username: "Your username"        # The username you would usually use for My Manchester
-password: "Your password"        # The accompanying password
+auto_login: No                   # Whether to use username and password from settings or standard input
+username: ""                     # The username you would usually use for My Manchester
+password: ""                     # The accompanying password
 base_dir: "~/Documents/Lectures" # Where to download files to
 concurrent_downloads: 4          # How many podcasts to download at the same time (Increases speed)
 ```
