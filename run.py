@@ -202,24 +202,26 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
                 complete_downloads += 1
 
         # Output downloads
-        print("\033[" + str(len(queue)) + "A\033[0J\033[1A")
+        output = "\033[" + str(len(queue)) + "A\033[0J"
         for download in queue:
             percent = 0
             if download["total_size"] > 0:
                 percent = round((download["progress"] / download["total_size"]) * progress_bar_size)
 
+            output += download["name"]
             if download["status"] == "started":
-                print(download["name"] + ": Downloading [" + (u"\u2588" * percent) +
-                      (" " * (progress_bar_size - percent)) + "] " + str(format_size(download["progress"])).rjust(6) +
-                      " / " + str(format_size(download["total_size"])))
+                output += ": Downloading [" + (u"\u2588" * percent) + \
+                      (" " * (progress_bar_size - percent)) + "] " + str(format_size(download["progress"])).rjust(6) + \
+                      " / " + str(format_size(download["total_size"])) + "\n"
             elif download["status"] == "waiting":
-                print(download["name"] + ": Waiting")
+                output += ": Waiting" + "\n"
             elif download["status"] == "complete":
-                print(download["name"] + ": Complete")
+                output += ": Complete" + "\n"
             elif download["status"] == "error":
-                print(download["name"] + ": Error: " + download["error"])
+                output += ": Error" + download["error"] + "\n"
             else:
-                print(download["name"] + ": " + download["status"])
+                output += ": " + download["status"] + "\n"
+        print(output, end="", flush=True)
 
         # Wait
         time.sleep(0.3)
