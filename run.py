@@ -2,7 +2,6 @@ import concurrent.futures
 import os
 import requests
 import settings
-import shutil
 import string
 import sys
 from bs4 import BeautifulSoup
@@ -66,6 +65,7 @@ if get_video_service_base.status_code != 200:
 
 # Create download queue
 queue = []
+
 
 # Filters all invalid characters from a file path name
 def filter_path_name(path):
