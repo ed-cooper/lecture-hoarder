@@ -9,12 +9,18 @@ from bs4 import BeautifulSoup
 # The list of characters that can be used in filenames
 VALID_FILE_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
+# The login service URL
+login_url = "https://login.manchester.ac.uk/cas/login"
+
+# The video service base URL
+video_base_url = "https://video.manchester.ac.uk"
+
 # Create cookie session
 session = requests.session()
 
 # First, get login page for hidden params
 print("Getting login page")
-get_login_service = session.get("https://login.manchester.ac.uk/cas/login")
+get_login_service = session.get(login_url)
 
 # Check status code valid
 if get_login_service.status_code != 200:
@@ -28,7 +34,7 @@ param_lt = get_login_soup.find("input", {"name": "lt"})["value"]
 
 # Send login request
 print("Logging on")
-post_login_service = session.post("https://login.manchester.ac.uk/cas/login",
+post_login_service = session.post(login_url,
                                   {"username": settings.username,
                                    "password": settings.password,
                                    "lt": param_lt,
@@ -54,7 +60,7 @@ if "errors" in login_result_div["class"]:
 
 # Get list of courses from video page
 print("Getting course list")
-get_video_service_base = session.get("https://video.manchester.ac.uk/lectures")
+get_video_service_base = session.get(video_base_url + "/lectures")
 
 # Check status code valid
 if get_video_service_base.status_code != 200:
@@ -76,7 +82,7 @@ def filter_path_name(path):
 # Logging messages will use the name to identify which podcast download request it is related to.
 def download_podcast(podcast):
     # Get podcast webpage
-    get_video_service_podcast_page = session.get("https://video.manchester.ac.uk" + podcast["podcast_link"])
+    get_video_service_podcast_page = session.get(video_base_url + podcast["podcast_link"])
 
     # Check status code valid
     if get_video_service_podcast_page.status_code != 200:
@@ -87,8 +93,7 @@ def download_podcast(podcast):
     # Status code valid, parse HTML
     get_video_service_podcast_page_soup = BeautifulSoup(get_video_service_podcast_page.content,
                                                         features="html.parser")
-    podcast_src = "https://video.manchester.ac.uk" + \
-                  get_video_service_podcast_page_soup.find("video", id="video").source["src"]
+    podcast_src = video_base_url + get_video_service_podcast_page_soup.find("video", id="video").source["src"]
 
     # Get podcast
     get_video_service_podcast = session.get(podcast_src, stream=True)
@@ -129,7 +134,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
         print("-" * (21 + len(course_li.a.string)))
         print("Getting podcasts for", course_li.a.string)
         print("-" * (21 + len(course_li.a.string)))
-        get_video_service_course = session.get("https://video.manchester.ac.uk" + course_li.a["href"])
+        get_video_service_course = session.get(video_base_url + course_li.a["href"])
 
         # Check status code valid
         if get_video_service_course.status_code != 200:

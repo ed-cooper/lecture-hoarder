@@ -17,7 +17,7 @@ Please remember to back your files up regularly.
 
 First, copy the file `settings-template.py` to `settings.py`
 
-Then, open it in your editor of your choice, and set the following 3 variables:
+Then, open it in your editor of your choice, and set the following 4 variables:
 ```python
 username = "Your username"        # The username you would usually use for My Manchester
 password = "Your password"        # The accompanying password
