@@ -32,8 +32,8 @@ Finally, execute the file called [run.py](run.py) *(requires Python 3.6+)*.
 Podcasts take a long time to download, so expect the first run to take over an hour
 to complete.
 
-Please do not interrupt the program during downloads, as this will result in
-corrupted files which will have to be manually removed.
+If you interrupt the program while downloading, you may find ```.partial``` files in
+the output directory. They are incomplete downloads and can safely be ignored/deleted.
 
 The program will only download podcasts that you have not already downloaded, meaning
 that any subsequent runs (provided you don't change the download directory) will be
