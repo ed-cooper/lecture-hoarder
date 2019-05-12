@@ -197,9 +197,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
                 complete_downloads += 1
 
         # Output downloads
-        print("\033[" + str(len(queue)) + "A\033[0j")
+        print("\033[" + str(len(queue) + 1) + "A\033[0J")
         for download in queue:
-            print(download["name"], ":", format_size(download["progress"]), format_size(download["total_size"]))
+            print(download["name"] + " [" + str(format_size(download["progress"])) + "->" +
+                  str(format_size(download["total_size"]) + "]"))
 
         # Wait
         time.sleep(0.3)
