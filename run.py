@@ -11,15 +11,6 @@ from bs4 import BeautifulSoup
 # The list of characters that can be used in filenames
 VALID_FILE_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
-# The login service URL
-login_url = "https://login.manchester.ac.uk/cas/login"
-
-# The video service base URL
-video_base_url = "https://video.manchester.ac.uk"
-
-# The length of progress bars
-progress_bar_size = 30
-
 # Get user settings
 with open("settings.yaml", "r") as stream:
     settings = yaml.safe_load(stream)
@@ -38,7 +29,7 @@ session = requests.session()
 
 # First, get login page for hidden params
 print("Getting login page")
-get_login_service = session.get(login_url)
+get_login_service = session.get(settings["login_service_url"])
 
 # Check status code valid
 if get_login_service.status_code != 200:
@@ -52,7 +43,7 @@ param_lt = get_login_soup.find("input", {"name": "lt"})["value"]
 
 # Send login request
 print("Logging on")
-post_login_service = session.post(login_url,
+post_login_service = session.post(settings["login_service_url"],
                                   {"username": username,
                                    "password": password,
                                    "lt": param_lt,
@@ -78,7 +69,7 @@ if "errors" in login_result_div["class"]:
 
 # Get list of courses from video page
 print("Getting course list")
-get_video_service_base = session.get(video_base_url + "/lectures")
+get_video_service_base = session.get(settings["video_service_base_url"] + "/lectures")
 
 # Check status code valid
 if get_video_service_base.status_code != 200:
@@ -105,7 +96,7 @@ def format_size(size_in_bytes):
 # Logging messages will use the name to identify which podcast download request it is related to.
 def download_podcast(podcast):
     # Get podcast webpage
-    get_video_service_podcast_page = session.get(video_base_url + podcast["podcast_link"])
+    get_video_service_podcast_page = session.get(settings["video_service_base_url"] + podcast["podcast_link"])
 
     # Check status code valid
     if get_video_service_podcast_page.status_code != 200:
@@ -117,7 +108,7 @@ def download_podcast(podcast):
     # Status code valid, parse HTML
     get_video_service_podcast_page_soup = BeautifulSoup(get_video_service_podcast_page.content,
                                                         features="html.parser")
-    podcast_src = video_base_url + get_video_service_podcast_page_soup.find("video", id="video").source["src"]
+    podcast_src = settings["video_service_base_url"] + get_video_service_podcast_page_soup.find("video", id="video").source["src"]
 
     # Get podcast
     get_video_service_podcast = session.get(podcast_src, stream=True)
@@ -158,7 +149,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         print("-" * (21 + len(course_li.a.string)))
         print("Getting podcasts for", course_li.a.string)
         print("-" * (21 + len(course_li.a.string)))
-        get_video_service_course = session.get(video_base_url + course_li.a["href"])
+        get_video_service_course = session.get(settings["video_service_base_url"] + course_li.a["href"])
 
         # Check status code valid
         if get_video_service_course.status_code != 200:
@@ -220,13 +211,14 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         for download in queue:
             percent = 0
             if download["total_size"] > 0:
-                percent = round((download["progress"] / download["total_size"]) * progress_bar_size)
+                percent = round((download["progress"] / download["total_size"]) * settings["progress_bar_size"])
 
             output += download["name"]
             if download["status"] == "started":
                 output += ": Downloading [" + (u"\u2588" * percent) + \
-                      (" " * (progress_bar_size - percent)) + "] " + str(format_size(download["progress"])).rjust(6) + \
-                      " / " + str(format_size(download["total_size"])) + "\n"
+                    (" " * (settings["progress_bar_size"] - percent)) + "] " + \
+                    str(format_size(download["progress"])).rjust(6) + " / " + \
+                    str(format_size(download["total_size"])) + "\n"
             elif download["status"] == "waiting":
                 output += ": Waiting" + "\n"
             elif download["status"] == "complete":
