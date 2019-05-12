@@ -7,4 +7,4 @@ install:
 before_script:
   - cp settings-template.py settings.py
 script:
-  - flake8 --statitistics
+  - flake8 --statistics
