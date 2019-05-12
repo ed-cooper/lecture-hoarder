@@ -111,7 +111,8 @@ def download_podcast(podcast):
     # Status code valid, parse HTML
     get_video_service_podcast_page_soup = BeautifulSoup(get_video_service_podcast_page.content,
                                                         features="html.parser")
-    podcast_src = settings["video_service_base_url"] + get_video_service_podcast_page_soup.find("video", id="video").source["src"]
+    podcast_src = settings["video_service_base_url"] + \
+        get_video_service_podcast_page_soup.find("video", id="video").source["src"]
 
     # Get podcast
     get_video_service_podcast = session.get(podcast_src, stream=True)
