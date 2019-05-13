@@ -62,4 +62,4 @@ target/
 venv
 
 # Other
-lecture-hoarder-settings.yaml
+lecture-hoarder-settings.test.yaml
