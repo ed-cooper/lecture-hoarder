@@ -103,9 +103,10 @@ def download_podcast(podcast):
 
     # Check status code valid
     if get_video_service_podcast_page.status_code != 200:
-        download["status"] = "error"
-        download["error"] = "Could not get podcast webpage for " + podcast["name"] + \
-                            " - Service responded with status code" + get_video_service_podcast_page.status_code
+        podcast["completion_time"] = time.time()
+        podcast["error"] = "Could not get podcast webpage for " + podcast["name"] + \
+                           " - Service responded with status code" + get_video_service_podcast_page.status_code
+        podcast["status"] = "error"
         return
 
     # Status code valid, parse HTML
@@ -119,9 +120,10 @@ def download_podcast(podcast):
 
     # Check status code valid
     if get_video_service_podcast.status_code != 200:
-        download["status"] = "error"
-        download["error"] = "Could not get podcast for " + podcast["name"] + " - Service responded with status code" + \
-                            get_video_service_podcast.status_code
+        podcast["completion_time"] = time.time()
+        podcast["error"] = "Could not get podcast for " + podcast["name"] + " - Service responded with status code" + \
+                           get_video_service_podcast.status_code
+        podcast["status"] = "error"
         return
 
     # Get download size
@@ -138,8 +140,8 @@ def download_podcast(podcast):
     os.rename(podcast["download_path"] + ".partial", podcast["download_path"])
 
     # Mark as complete
-    podcast["status"] = "complete"
     podcast["completion_time"] = time.time()
+    podcast["status"] = "complete"
 
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_downloads"]) as executor:
@@ -232,6 +234,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
     # Loop until all downloads completed
     complete_downloads = 0
     total_downloads = len(queue)
+    report_complete = []
+    report_errors = []
     while complete_downloads < total_downloads:
         # Check whether there are any remaining downloads
         complete_downloads = 0
@@ -245,6 +249,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         # Remove stale downloads
         for download in queue:
             if download["status"] == "complete" and time.time() - download["completion_time"] > 3:
+                report_complete.append(download)
+                queue.remove(download)
+            if download["status"] == "error" and time.time() - download["completion_time"] > 3:
+                report_errors.append(download)
                 queue.remove(download)
 
         # Check if we need to truncate downloads
@@ -274,7 +282,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
             elif download["status"] == "complete":
                 output += ": Complete" + "\n"
             elif download["status"] == "error":
-                output += ": Error" + download["error"] + "\n"
+                output += ": Error" + "\n"
             else:
                 output += ": " + download["status"] + "\n"
 
@@ -286,4 +294,30 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         # Wait
         time.sleep(0.3)
 
-    print("\033[" + str(output_length) + "F\033[0JAll downloads completed")
+    print("\033[" + str(output_length) + "F\033[0J", end="")
+
+    # Add remaining downloads to report
+    for download in queue:
+        if download["status"] == "complete":
+            report_complete.append(download)
+        elif download["status"] == "error":
+            report_errors.append(download)
+        else:
+            print("Unexpected", download["status"], download["name"], download["error"])
+
+    download_string = "downloads"
+    if len(report_complete) == 1:
+        download_string = "download"
+
+    print(f"{len(report_complete)} {download_string} completed successfully")
+
+    if len(report_errors) == 0:
+        print("No errors occurred")
+    else:
+        error_string = "errors"
+        if len(report_errors) == 1:
+            error_string = "error"
+
+        print(f"{len(report_errors)} {error_string} occurred:")
+        for error in report_errors:
+            print("- " + error["name"] + ": " + error["error"])
