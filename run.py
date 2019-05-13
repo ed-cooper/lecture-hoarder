@@ -20,7 +20,6 @@ with open(os.path.expanduser(settings_path), "r") as stream:
     settings = yaml.safe_load(stream)
 
 # Get username and password
-
 if settings["auto_login"]:
     username = settings["username"]
     password = settings["password"]
@@ -82,9 +81,6 @@ if get_video_service_base.status_code != 200:
 
 # Status code valid
 
-# Create download queue
-queue = []
-
 
 # Filters all invalid characters from a file path name
 def filter_path_name(path):
@@ -143,10 +139,12 @@ def download_podcast(podcast):
 
     # Mark as complete
     podcast["status"] = "complete"
+    podcast["completion_time"] = time.time()
 
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_downloads"]) as executor:
-    futures = []
+    queue = []    # List of downloads
+    futures = []  # List of executable tasks
 
     # Parse HTML
     get_video_service_base_soup = BeautifulSoup(get_video_service_base.content, features="html.parser")
@@ -202,28 +200,63 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
                           "status": "waiting",
                           "error": "",
                           "progress": 0,
-                          "total_size": 0})
+                          "total_size": 0,
+                          "completion_time": 0})
 
     # Start downloads
     print("--------------------")
     print("Downloading podcasts")
     print("--------------------")
+
+    # Add tasks
     for download in queue:
         futures.append(executor.submit(download_podcast, download))
-        print(download["name"] + ": Waiting")
+
+    # Get terminal size
+    terminal_width, terminal_height = os.get_terminal_size(0)
+
+    # Check if we need to truncate the output
+    output_length = len(queue)
+    truncated = False
+    if output_length > terminal_height - 1:
+        output_length = terminal_height - 1
+        truncated = True
+
+    # Primary output
+    for index in range(output_length):
+        print(queue[index]["name"] + ": Waiting")
+
+    if truncated:
+        print(f"[{len(queue) - output_length} downloads hidden]", end="")
 
     # Loop until all downloads completed
     complete_downloads = 0
-    while complete_downloads < len(queue):
+    total_downloads = len(queue)
+    while complete_downloads < total_downloads:
         # Check whether there are any remaining downloads
         complete_downloads = 0
         for future in futures:
             if future.done():
                 complete_downloads += 1
 
-        # Output downloads
-        output = "\033[" + str(len(queue)) + "A\033[0J"
+        # Reset cursor
+        output = "\033[" + str(output_length) + "F\033[0J"
+
+        # Remove stale downloads
         for download in queue:
+            if download["status"] == "complete" and time.time() - download["completion_time"] > 3:
+                queue.remove(download)
+
+        # Check if we need to truncate downloads
+        output_length = len(queue)
+        truncated = False
+        if output_length > terminal_height - 1:
+            output_length = terminal_height - 1
+            truncated = True
+
+        # Output downloads
+        for index in range(output_length):
+            download = queue[index]
             percent = 0
             if download["total_size"] > 0:
                 percent = round((download["progress"] / download["total_size"]) * settings["progress_bar_size"])
@@ -244,9 +277,13 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
                 output += ": Error" + download["error"] + "\n"
             else:
                 output += ": " + download["status"] + "\n"
+
+        if truncated:
+            output += f"[{len(queue) - output_length} downloads hidden]"
+
         print(output, end="", flush=True)
 
         # Wait
         time.sleep(0.3)
 
-    print("All downloads completed")
+    print("\033[" + str(output_length) + "F\033[0JAll downloads completed")
