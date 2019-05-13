@@ -5,6 +5,6 @@ python:
 install:
   - pip install -r requirements.txt
 before_script:
-  - cp lecture-hoarder-settings.template.yaml ~/lecture-hoarder-settings.yaml
+  - cp lecture-hoarder-settings.yaml ~
 script:
   - flake8 --statistics
