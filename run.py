@@ -9,6 +9,10 @@ import time
 import yaml
 from bs4 import BeautifulSoup
 
+# Enable ANSI codes on Windows
+import subprocess
+subprocess.call('', shell=True)
+
 # The list of characters that can be used in filenames
 VALID_FILE_CHARS = f"-_.() {string.ascii_letters}{string.digits}"
 
@@ -215,7 +219,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         futures.append(executor.submit(download_podcast, download))
 
     # Get terminal size
-    terminal_width, terminal_height = os.get_terminal_size(0)
+    terminal_width, terminal_height = os.get_terminal_size()
 
     # Check if we need to truncate the output
     output_length = len(queue)
