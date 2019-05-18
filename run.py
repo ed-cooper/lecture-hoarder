@@ -1,4 +1,3 @@
-import colorama
 import concurrent.futures
 import getpass
 import os
@@ -11,7 +10,9 @@ import yaml
 from bs4 import BeautifulSoup
 
 # Enable ANSI codes on Windows
-colorama.init()
+if os.name == "nt":
+    import subprocess
+    subprocess.call('', shell=True)
 
 # The list of characters that can be used in filenames
 VALID_FILE_CHARS = f"-_.() {string.ascii_letters}{string.digits}"
@@ -219,7 +220,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         futures.append(executor.submit(download_podcast, download))
 
     # Get terminal size
-    terminal_width, terminal_height = os.get_terminal_size()
+    terminal_width, terminal_height = os.get_terminal_size(0)
 
     # Check if we need to truncate the output
     output_length = len(queue)
