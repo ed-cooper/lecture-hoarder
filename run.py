@@ -220,7 +220,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         futures.append(executor.submit(download_podcast, download))
 
     # Get terminal size
-    terminal_width, terminal_height = os.get_terminal_size(0)
+    if os.name == "nt":
+        terminal_width, terminal_height = os.get_terminal_size()  # Windows
+    else:
+        terminal_width, terminal_height = os.get_terminal_size(0)  # Linux (supports piping)
 
     # Check if we need to truncate the output
     output_length = len(queue)
