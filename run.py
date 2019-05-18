@@ -1,3 +1,4 @@
+import colorama
 import concurrent.futures
 import getpass
 import os
@@ -10,8 +11,7 @@ import yaml
 from bs4 import BeautifulSoup
 
 # Enable ANSI codes on Windows
-import subprocess
-subprocess.call('', shell=True)
+colorama.init()
 
 # The list of characters that can be used in filenames
 VALID_FILE_CHARS = f"-_.() {string.ascii_letters}{string.digits}"
