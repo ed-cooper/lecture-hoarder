@@ -118,14 +118,15 @@ def download_podcast(podcast):
     get_video_service_podcast_page_soup = BeautifulSoup(get_video_service_podcast_page.content,
                                                         features="html.parser")
 
-    podcast_src = settings["video_service_base_url"] + \
-        get_video_service_podcast_page_soup.find("video", id="video").source["src"]
+    download_button = get_video_service_podcast_page_soup.find("a", id="downloadButton")
 
-    if not podcast_src:
+    if not download_button or not download_button["href"]:
         podcast["completion_time"] = time.time()
-        podcast["error"] = "Could not get video source for podcast " + podcast["name"]
+        podcast["error"] = "Could not find download link for podcast " + podcast["name"]
         podcast["status"] = "error"
         return
+
+    podcast_src = settings["video_service_base_url"] + download_button["href"]
 
     # Get podcast
     get_video_service_podcast = session.get(podcast_src, stream=True)
@@ -335,4 +336,4 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
 
         print(f"{len(report_errors)} {error_string} occurred:")
         for error in report_errors:
-            print("- " + error["name"] + ": " + error["error"])
+            print("* " + error["name"] + ": " + error["error"])
