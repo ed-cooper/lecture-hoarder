@@ -117,8 +117,15 @@ def download_podcast(podcast):
     # Status code valid, parse HTML
     get_video_service_podcast_page_soup = BeautifulSoup(get_video_service_podcast_page.content,
                                                         features="html.parser")
+
     podcast_src = settings["video_service_base_url"] + \
         get_video_service_podcast_page_soup.find("video", id="video").source["src"]
+
+    if not podcast_src:
+        podcast["completion_time"] = time.time()
+        podcast["error"] = "Could not get video source for podcast " + podcast["name"]
+        podcast["status"] = "error"
+        return
 
     # Get podcast
     get_video_service_podcast = session.get(podcast_src, stream=True)
@@ -311,7 +318,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         elif download["status"] == "error":
             report_errors.append(download)
         else:
-            print("Unexpected", download["status"], download["name"], download["error"])
+            print(f"Unexpected status [{download['status']}] for completed podcast {download['name']}")
 
     download_string = "downloads"
     if len(report_complete) == 1:
