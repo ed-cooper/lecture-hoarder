@@ -9,6 +9,13 @@ import time
 import yaml
 from bs4 import BeautifulSoup
 
+# Check python version
+if sys.hexversion < 0x03060000:
+    # Python version is less than 3.6
+    print("This program requires Python 3.6 or later")
+    print("Please update your installation")
+    sys.exit(1)
+
 # Enable ANSI codes on Windows
 if os.name == "nt":
     import subprocess
