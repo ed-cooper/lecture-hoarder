@@ -35,12 +35,12 @@ exclude: ""                      # Case-sensitive regular expression; course nam
 Then, install the packages listed in [requirements.txt](requirements.txt):
 
 ```bash
-pip install -r reqirements.txt
+pip3 install -r reqirements.txt
 ```
 
 Finally, execute the file called [run.py](run.py) *(requires Python 3.6+)*:
 ```bash
-python run.py
+python3 run.py
 ```
 
 Podcasts take a long time to download, so the first run may take a while to complete.
