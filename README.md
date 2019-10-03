@@ -35,7 +35,7 @@ exclude: ""                      # Case-sensitive regular expression; course nam
 Then, install the packages listed in [requirements.txt](requirements.txt):
 
 ```bash
-pip3 install -r reqirements.txt
+pip3 install -r requirements.txt
 ```
 
 Finally, execute the file called [run.py](run.py) *(requires Python 3.6+)*:
