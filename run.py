@@ -232,6 +232,11 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
     print("Downloading podcasts")
     print("--------------------")
 
+    # Terminate early if nothing in queue
+    if len(queue) == 0:
+        print("Nothing to do")
+        sys.exit(1)
+
     # Add tasks
     for download in queue:
         futures.append(executor.submit(download_podcast, download))
