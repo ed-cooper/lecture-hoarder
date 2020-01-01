@@ -1,15 +1,18 @@
-#!/usr/bin/env python3
+"""Main command line entry point for lecturehoarder."""
 
 import concurrent.futures
 import getpass
 import os
 import re
-import requests
 import string
 import sys
 import time
+
+import requests
 import yaml
 from bs4 import BeautifulSoup
+
+from model import Download
 
 # Check python version
 if sys.hexversion < 0x03060000:
@@ -108,19 +111,17 @@ def format_size(size_in_bytes):
 
 # Downloads a podcast using the href and a target location.
 # Logging messages will use the name to identify which podcast download request it is related to.
-def download_podcast(podcast):
+def download_podcast(podcast: Download):
     # Set starting status
-    podcast["status"] = "starting"
+    podcast.status = "starting"
 
     # Get podcast webpage
-    get_video_service_podcast_page = session.get(settings["video_service_base_url"] + podcast["podcast_link"])
+    get_video_service_podcast_page = session.get(settings["video_service_base_url"] + podcast.podcast_link)
 
     # Check status code valid
     if get_video_service_podcast_page.status_code != 200:
-        podcast["completion_time"] = time.time()
-        podcast["error"] = "Could not get podcast webpage for " + podcast["name"] + \
-                           " - Service responded with status code" + get_video_service_podcast_page.status_code
-        podcast["status"] = "error"
+        podcast.set_error(f"Could not get podcast webpage for {podcast.name}"
+                          f" - Service responded with status code {get_video_service_podcast_page.status_code}")
         return
 
     # Status code valid, parse HTML
@@ -130,9 +131,7 @@ def download_podcast(podcast):
     download_button = get_video_service_podcast_page_soup.find("a", id="downloadButton")
 
     if not download_button or not download_button["href"]:
-        podcast["completion_time"] = time.time()
-        podcast["error"] = "Could not find download link for podcast " + podcast["name"]
-        podcast["status"] = "error"
+        podcast.set_error(f"Could not find download link for podcast {podcast.name}")
         return
 
     podcast_src = settings["video_service_base_url"] + download_button["href"]
@@ -142,28 +141,25 @@ def download_podcast(podcast):
 
     # Check status code valid
     if get_video_service_podcast.status_code != 200:
-        podcast["completion_time"] = time.time()
-        podcast["error"] = "Could not get podcast for " + podcast["name"] + " - Service responded with status code" + \
-                           get_video_service_podcast.status_code
-        podcast["status"] = "error"
+        podcast.set_error(f"Could not get podcast for {podcast.name} - Service responded with status code "
+                          f"{get_video_service_podcast.status_code}")
         return
 
     # Get download size
-    podcast["status"] = "started"
-    podcast["total_size"] = int(get_video_service_podcast.headers['Content-Length'])
+    podcast.status = "started"
+    podcast.total_size = int(get_video_service_podcast.headers['Content-Length'])
 
     # Write to file with partial extension
-    with open(podcast["download_path"] + ".partial", "wb") as f:
+    with open(podcast.download_path + ".partial", "wb") as f:
         for chunk in get_video_service_podcast:
             f.write(chunk)
-            podcast["progress"] += len(chunk)
+            podcast.progress += len(chunk)
 
     # Rename completed file
-    os.rename(podcast["download_path"] + ".partial", podcast["download_path"])
+    os.rename(podcast.download_path + ".partial", podcast.download_path)
 
     # Mark as complete
-    podcast["completion_time"] = time.time()
-    podcast["status"] = "complete"
+    podcast.set_complete()
 
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_downloads"]) as executor:
@@ -218,14 +214,11 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
             print("Queuing podcast", podcast_li.a.string)
 
             # Queue podcast for downloading
-            queue.append({"name": podcast_li.a.string,
-                          "podcast_link": podcast_li.a["href"],
-                          "download_path": download_path,
-                          "status": "waiting",
-                          "error": "",
-                          "progress": 0,
-                          "total_size": 0,
-                          "completion_time": 0})
+            queue.append(Download(
+                name=podcast_li.a.string,
+                podcast_link=podcast_li.a["href"],
+                download_path=download_path
+            ))
 
     # Start downloads
     print("--------------------")
@@ -256,7 +249,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
 
     # Primary output
     for index in range(output_length):
-        print(queue[index]["name"] + ": Waiting")
+        print(queue[index].name + ": Waiting")
 
     if truncated:
         print(f"[{len(queue) - output_length} downloads hidden]", end="")
@@ -278,10 +271,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
 
         # Remove stale downloads
         for download in queue:
-            if download["status"] == "complete" and time.time() - download["completion_time"] > 3:
+            if download.status == "complete" and time.time() - download.completion_time > 3:
                 report_complete.append(download)
                 queue.remove(download)
-            if download["status"] == "error" and time.time() - download["completion_time"] > 3:
+            if download.status == "error" and time.time() - download.completion_time > 3:
                 report_errors.append(download)
                 queue.remove(download)
 
@@ -296,25 +289,25 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         for index in range(output_length):
             download = queue[index]
             percent = 0
-            if download["total_size"] > 0:
-                percent = round((download["progress"] / download["total_size"]) * settings["progress_bar_size"])
+            if download.total_size > 0:
+                percent = round((download.progress / download.total_size) * settings["progress_bar_size"])
 
-            output += download["name"]
-            if download["status"] == "started":
+            output += download.name
+            if download.status == "started":
                 output += ": Downloading [" + (u"\u2588" * percent) + \
                     (" " * (settings["progress_bar_size"] - percent)) + "] " + \
-                    str(format_size(download["progress"])).rjust(6) + " / " + \
-                    str(format_size(download["total_size"])) + "\n"
-            elif download["status"] == "starting":
+                    str(format_size(download.progress)).rjust(6) + " / " + \
+                    str(format_size(download.total_size)) + "\n"
+            elif download.status == "starting":
                 output += ": Starting" + "\n"
-            elif download["status"] == "waiting":
+            elif download.status == "waiting":
                 output += ": Waiting" + "\n"
-            elif download["status"] == "complete":
+            elif download.status == "complete":
                 output += ": Complete" + "\n"
-            elif download["status"] == "error":
+            elif download.status == "error":
                 output += ": Error" + "\n"
             else:
-                output += ": " + download["status"] + "\n"
+                output += ": " + download.status + "\n"
 
         if truncated:
             output += f"[{len(queue) - output_length} downloads hidden]"
@@ -328,12 +321,12 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
 
     # Add remaining downloads to report
     for download in queue:
-        if download["status"] == "complete":
+        if download.status == "complete":
             report_complete.append(download)
-        elif download["status"] == "error":
+        elif download.status == "error":
             report_errors.append(download)
         else:
-            print(f"Unexpected status [{download['status']}] for completed podcast {download['name']}")
+            print(f"Unexpected status [{download.status}] for completed podcast {download.name}")
 
     download_string = "downloads"
     if len(report_complete) == 1:
@@ -349,5 +342,5 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
             error_string = "error"
 
         print(f"{len(report_errors)} {error_string} occurred:")
-        for error in report_errors:
-            print("* " + error["name"] + ": " + error["error"])
+        for error_podcast in report_errors:
+            print("* " + error_podcast.name + ": " + error_podcast.error_message)
