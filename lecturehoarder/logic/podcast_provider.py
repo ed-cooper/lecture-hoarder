@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
+from typing import Iterator
 
-from model import Profile
+import requests
+
+from model import Course, Podcast, Profile
 
 
 class PodcastProvider(ABC):
@@ -30,25 +33,25 @@ class PodcastProvider(ABC):
         pass
 
     @abstractmethod
-    def get_course_list(self):
+    def get_course_list(self) -> Iterator[Course]:
         """Gets the list of available courses.
 
         :return: A list of course IDs."""
         pass
 
     @abstractmethod
-    def get_course_podcasts(self, course_id: str):
+    def get_course_podcasts(self, course: Course) -> Iterator[Podcast]:
         """Gets the list of available podcasts for the specified course.
 
-        :param course_id: The identifier for the course to get the podcasts for.
+        :param course: The course to get the podcasts for.
         :return: A list of podcast IDs.
         """
         pass
 
     @abstractmethod
-    def get_podcast_stream(self, podcast_id: str):
-        """Gets the download stream for the specified podcast.
+    def get_podcast_stream(self, podcast: Podcast) -> requests.Response:
+        """Gets the HTTP response for the specified podcast download.
 
-        :param podcast_id: The ID of the podcast to get the stream for.
+        :param podcast: The podcast to get the download response for.
         """
         pass
