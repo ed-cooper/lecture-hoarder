@@ -162,75 +162,75 @@ def download_podcast(podcast: Download):
     podcast.set_complete()
 
 
-with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
-    queue = []    # List of downloads
-    futures = []  # List of executable tasks
+queue = []    # List of downloads
+futures = []  # List of executable tasks
+
+# Parse HTML
+get_video_service_base_soup = BeautifulSoup(get_video_service_base.content, features="html.parser")
+
+for course_li in get_video_service_base_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[3].find_all("li", {
+        "class": "series"}):
+    # For each course
+
+    # Check if course is ignored
+    if settings.exclude and re.match(settings.exclude, course_li.a.string):
+        print("-" * (9 + len(course_li.a.string)))
+        print("Ignoring", course_li.a.string)
+        continue
+
+    print("-" * (21 + len(course_li.a.string)))
+    print("Getting podcasts for", course_li.a.string)
+    print("-" * (21 + len(course_li.a.string)))
+    get_video_service_course = session.get(settings.video_service_base_url + course_li.a["href"])
+
+    # Check status code valid
+    if get_video_service_course.status_code != 200:
+        print("Could not get podcasts for", course_li.a.string, "- Service responded with status code",
+              get_video_service_course.status_code)
+        continue
+
+    # Success code valid, create directory for podcasts
+    course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course_li.a.string)))
+    os.makedirs(course_dir, exist_ok=True)
 
     # Parse HTML
-    get_video_service_base_soup = BeautifulSoup(get_video_service_base.content, features="html.parser")
+    get_video_service_course_soup = BeautifulSoup(get_video_service_course.content, features="html.parser")
+    podcasts = get_video_service_course_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[5].find_all("li", {
+        "class": "episode"})
+    podcast_no = len(podcasts) + 1
+    for podcast_li in podcasts:
+        # For each podcast
+        podcast_no -= 1
 
-    for course_li in get_video_service_base_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[3].find_all("li", {
-            "class": "series"}):
-        # For each course
-
-        # Check if course is ignored
-        if settings.exclude and re.match(settings.exclude, course_li.a.string):
-            print("-" * (9 + len(course_li.a.string)))
-            print("Ignoring", course_li.a.string)
+        # Check podcast not already downloaded
+        download_path = os.path.expanduser(os.path.join(course_dir, f"{podcast_no:02d} - " +
+                                                        filter_path_name(podcast_li.a.string) + ".mp4"))
+        if os.path.isfile(download_path):
+            print("Skipping podcast", podcast_li.a.string, "(already exists)")
             continue
 
-        print("-" * (21 + len(course_li.a.string)))
-        print("Getting podcasts for", course_li.a.string)
-        print("-" * (21 + len(course_li.a.string)))
-        get_video_service_course = session.get(settings.video_service_base_url + course_li.a["href"])
+        # Podcast not yet downloaded
+        print("Queuing podcast", podcast_li.a.string)
 
-        # Check status code valid
-        if get_video_service_course.status_code != 200:
-            print("Could not get podcasts for", course_li.a.string, "- Service responded with status code",
-                  get_video_service_course.status_code)
-            continue
+        # Queue podcast for downloading
+        queue.append(Download(
+            name=podcast_li.a.string,
+            podcast_link=podcast_li.a["href"],
+            download_path=download_path
+        ))
 
-        # Success code valid, create directory for podcasts
-        course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course_li.a.string)))
-        os.makedirs(course_dir, exist_ok=True)
+# Start downloads
+print("--------------------")
+print("Downloading podcasts")
+print("--------------------")
 
-        # Parse HTML
-        get_video_service_course_soup = BeautifulSoup(get_video_service_course.content, features="html.parser")
-        podcasts = get_video_service_course_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[5].find_all("li", {
-            "class": "episode"})
-        podcast_no = len(podcasts) + 1
-        for podcast_li in podcasts:
-            # For each podcast
-            podcast_no -= 1
+# Terminate early if nothing in queue
+if len(queue) == 0:
+    print("Nothing to do")
+    sys.exit(1)
 
-            # Check podcast not already downloaded
-            download_path = os.path.expanduser(os.path.join(course_dir, f"{podcast_no:02d} - " +
-                                                            filter_path_name(podcast_li.a.string) + ".mp4"))
-            if os.path.isfile(download_path):
-                print("Skipping podcast", podcast_li.a.string, "(already exists)")
-                continue
-
-            # Podcast not yet downloaded
-            print("Queuing podcast", podcast_li.a.string)
-
-            # Queue podcast for downloading
-            queue.append(Download(
-                name=podcast_li.a.string,
-                podcast_link=podcast_li.a["href"],
-                download_path=download_path
-            ))
-
-    # Start downloads
-    print("--------------------")
-    print("Downloading podcasts")
-    print("--------------------")
-
-    # Terminate early if nothing in queue
-    if len(queue) == 0:
-        print("Nothing to do")
-        sys.exit(1)
-
-    # Add tasks
+# Add tasks
+with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
     for download in queue:
         futures.append(executor.submit(download_podcast, download))
 
