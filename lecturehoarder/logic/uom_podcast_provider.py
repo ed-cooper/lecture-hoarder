@@ -66,7 +66,8 @@ class UomPodcastProvider(PodcastProvider):
     def get_course_list(self) -> Iterator[Course]:
         """Gets the list of available courses.
 
-        :return: A list of URLs for each course podcast home."""
+        :return: A list of URLs for each course podcast home.
+        """
 
         # Get list of courses from video page
         get_video_service_base = self.session.get(self.settings_profile.video_service_base_url + "/lectures")
