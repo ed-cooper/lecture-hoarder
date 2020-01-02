@@ -9,10 +9,9 @@ import sys
 import time
 
 import requests
-import yaml
 from bs4 import BeautifulSoup
 
-from model import Download
+from model import Download, Profile
 
 # Check python version
 if sys.hexversion < 0x03060000:
@@ -33,13 +32,14 @@ VALID_FILE_CHARS = f"-_.() {string.ascii_letters}{string.digits}"
 settings_path = "~/lecture-hoarder-settings.yaml"
 if len(sys.argv) > 1:
     settings_path = sys.argv[1]  # User has specified custom settings file location
-with open(os.path.expanduser(settings_path), "r") as stream:
-    settings = yaml.safe_load(stream)
+
+settings = Profile()
+settings.load_from_file(settings_path)
 
 # Get username and password
-if settings["auto_login"]:
-    username = settings["username"]
-    password = settings["password"]
+if settings.auto_login:
+    username = settings.username
+    password = settings.password
 else:
     username = input("Please enter your username: ")
     password = getpass.getpass("Please enter your password: ")
@@ -49,7 +49,7 @@ session = requests.session()
 
 # First, get login page for hidden params
 print("Getting login page")
-get_login_service = session.get(settings["login_service_url"])
+get_login_service = session.get(settings.login_service_url)
 
 # Check status code valid
 if get_login_service.status_code != 200:
@@ -63,7 +63,7 @@ param_lt = get_login_soup.find("input", {"name": "lt"})["value"]
 
 # Send login request
 print("Logging on")
-post_login_service = session.post(settings["login_service_url"],
+post_login_service = session.post(settings.login_service_url,
                                   {"username": username,
                                    "password": password,
                                    "lt": param_lt,
@@ -89,7 +89,7 @@ if "errors" in login_result_div["class"]:
 
 # Get list of courses from video page
 print("Getting course list")
-get_video_service_base = session.get(settings["video_service_base_url"] + "/lectures")
+get_video_service_base = session.get(settings.video_service_base_url + "/lectures")
 
 # Check status code valid
 if get_video_service_base.status_code != 200:
@@ -116,7 +116,7 @@ def download_podcast(podcast: Download):
     podcast.status = "starting"
 
     # Get podcast webpage
-    get_video_service_podcast_page = session.get(settings["video_service_base_url"] + podcast.podcast_link)
+    get_video_service_podcast_page = session.get(settings.video_service_base_url + podcast.podcast_link)
 
     # Check status code valid
     if get_video_service_podcast_page.status_code != 200:
@@ -134,7 +134,7 @@ def download_podcast(podcast: Download):
         podcast.set_error(f"Could not find download link for podcast {podcast.name}")
         return
 
-    podcast_src = settings["video_service_base_url"] + download_button["href"]
+    podcast_src = settings.video_service_base_url + download_button["href"]
 
     # Get podcast
     get_video_service_podcast = session.get(podcast_src, stream=True)
@@ -162,7 +162,7 @@ def download_podcast(podcast: Download):
     podcast.set_complete()
 
 
-with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_downloads"]) as executor:
+with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
     queue = []    # List of downloads
     futures = []  # List of executable tasks
 
@@ -174,7 +174,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         # For each course
 
         # Check if course is ignored
-        if settings["exclude"] and re.match(settings["exclude"], course_li.a.string):
+        if settings.exclude and re.match(settings.exclude, course_li.a.string):
             print("-" * (9 + len(course_li.a.string)))
             print("Ignoring", course_li.a.string)
             continue
@@ -182,7 +182,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
         print("-" * (21 + len(course_li.a.string)))
         print("Getting podcasts for", course_li.a.string)
         print("-" * (21 + len(course_li.a.string)))
-        get_video_service_course = session.get(settings["video_service_base_url"] + course_li.a["href"])
+        get_video_service_course = session.get(settings.video_service_base_url + course_li.a["href"])
 
         # Check status code valid
         if get_video_service_course.status_code != 200:
@@ -191,7 +191,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
             continue
 
         # Success code valid, create directory for podcasts
-        course_dir = os.path.expanduser(os.path.join(settings["base_dir"], filter_path_name(course_li.a.string)))
+        course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course_li.a.string)))
         os.makedirs(course_dir, exist_ok=True)
 
         # Parse HTML
@@ -290,12 +290,12 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings["concurrent_down
             download = queue[index]
             percent = 0
             if download.total_size > 0:
-                percent = round((download.progress / download.total_size) * settings["progress_bar_size"])
+                percent = round((download.progress / download.total_size) * settings.progress_bar_size)
 
             output += download.name
             if download.status == "started":
                 output += ": Downloading [" + (u"\u2588" * percent) + \
-                    (" " * (settings["progress_bar_size"] - percent)) + "] " + \
+                    (" " * (settings.progress_bar_size - percent)) + "] " + \
                     str(format_size(download.progress)).rjust(6) + " / " + \
                     str(format_size(download.total_size)) + "\n"
             elif download.status == "starting":
