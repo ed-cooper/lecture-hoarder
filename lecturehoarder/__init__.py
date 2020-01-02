@@ -1,3 +1,3 @@
-"""Imports used when importing lecturehoarder."""
+import model
 
-from model import *
+__all__ = ["model"]
