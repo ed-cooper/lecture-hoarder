@@ -1,5 +1,7 @@
 import time
 
+from model.download_status import DownloadStatus
+
 
 class Download:
     """A podcast being downloaded.
@@ -18,7 +20,7 @@ class Download:
     name: str = None
     podcast_link: str = None
     download_path: str = None
-    status: str = "waiting"
+    status: DownloadStatus = DownloadStatus.WAITING
     error_message: str = None
     progress: int = 0
     total_size: int = 0
@@ -32,7 +34,7 @@ class Download:
     def set_complete(self):
         """Marks the podcast download as being completed."""
 
-        self.status = "complete"
+        self.status = DownloadStatus.COMPLETE
         self.completion_time = time.time()
 
     def set_error(self, message: str):
@@ -41,6 +43,6 @@ class Download:
         :param message: The error message.
         """
 
-        self.status = "error"
+        self.status = DownloadStatus.ERROR
         self.error_message = message
         self.completion_time = time.time()

@@ -11,7 +11,7 @@ import time
 import requests
 from bs4 import BeautifulSoup
 
-from model import Download, Profile
+from model import Download, DownloadStatus, Profile
 
 # Check python version
 if sys.hexversion < 0x03060000:
@@ -113,7 +113,7 @@ def format_size(size_in_bytes):
 # Logging messages will use the name to identify which podcast download request it is related to.
 def download_podcast(podcast: Download):
     # Set starting status
-    podcast.status = "starting"
+    podcast.status = DownloadStatus.STARTING
 
     # Get podcast webpage
     get_video_service_podcast_page = session.get(settings.video_service_base_url + podcast.podcast_link)
@@ -146,7 +146,7 @@ def download_podcast(podcast: Download):
         return
 
     # Get download size
-    podcast.status = "started"
+    podcast.status = DownloadStatus.DOWNLOADING
     podcast.total_size = int(get_video_service_podcast.headers['Content-Length'])
 
     # Write to file with partial extension
@@ -271,10 +271,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
 
         # Remove stale downloads
         for download in queue:
-            if download.status == "complete" and time.time() - download.completion_time > 3:
+            if download.status == DownloadStatus.COMPLETE and time.time() - download.completion_time > 3:
                 report_complete.append(download)
                 queue.remove(download)
-            if download.status == "error" and time.time() - download.completion_time > 3:
+            if download.status == DownloadStatus.ERROR and time.time() - download.completion_time > 3:
                 report_errors.append(download)
                 queue.remove(download)
 
@@ -293,21 +293,13 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
                 percent = round((download.progress / download.total_size) * settings.progress_bar_size)
 
             output += download.name
-            if download.status == "started":
+            if download.status == DownloadStatus.DOWNLOADING:
                 output += ": Downloading [" + (u"\u2588" * percent) + \
                     (" " * (settings.progress_bar_size - percent)) + "] " + \
                     str(format_size(download.progress)).rjust(6) + " / " + \
                     str(format_size(download.total_size)) + "\n"
-            elif download.status == "starting":
-                output += ": Starting" + "\n"
-            elif download.status == "waiting":
-                output += ": Waiting" + "\n"
-            elif download.status == "complete":
-                output += ": Complete" + "\n"
-            elif download.status == "error":
-                output += ": Error" + "\n"
             else:
-                output += ": " + download.status + "\n"
+                output += ": " + download.status.value + "\n"
 
         if truncated:
             output += f"[{len(queue) - output_length} downloads hidden]"
@@ -321,12 +313,12 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
 
     # Add remaining downloads to report
     for download in queue:
-        if download.status == "complete":
+        if download.status == DownloadStatus.COMPLETE:
             report_complete.append(download)
-        elif download.status == "error":
+        elif download.status == DownloadStatus.ERROR:
             report_errors.append(download)
         else:
-            print(f"Unexpected status [{download.status}] for completed podcast {download.name}")
+            print(f"Unexpected status [{download.status.name}] for completed podcast {download.name}")
 
     download_string = "downloads"
     if len(report_complete) == 1:
