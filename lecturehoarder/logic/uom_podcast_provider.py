@@ -110,7 +110,7 @@ class UomPodcastProvider(PodcastProvider):
 
         return map(lambda x: Podcast(x.a.string, x.a["href"]), podcasts_html)
 
-    def get_podcast_stream(self, podcast: Podcast) -> requests.Response:
+    def get_podcast_downloader(self, podcast: Podcast) -> requests.Response:
         """Gets the HTTP response for the specified podcast download.
 
         :param podcast: The podcast to get the download response for.

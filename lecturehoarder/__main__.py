@@ -94,7 +94,7 @@ def download_podcast(download: Download):
 
     # Get download response
     try:
-        http_download_response = web_provider.get_podcast_stream(download.podcast)
+        http_download_response = web_provider.get_podcast_downloader(download.podcast)
     except PodcastProviderError as err:
         # Error whilst logging on
         download.set_error(str(err))

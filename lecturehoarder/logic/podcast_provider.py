@@ -52,7 +52,7 @@ class PodcastProvider(ABC):
         pass
 
     @abstractmethod
-    def get_podcast_stream(self, podcast: Podcast) -> requests.Response:
+    def get_podcast_downloader(self, podcast: Podcast) -> requests.Response:
         """Gets the HTTP response for the specified podcast download.
 
         :param podcast: The podcast to get the download response for.
