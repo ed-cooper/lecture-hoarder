@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from logic.podcast_provider import PodcastProvider
+from logic.podcast_provider_error import PodcastProviderError
 from model import Course, Podcast, Profile
 
 
@@ -32,9 +33,8 @@ class UomPodcastProvider(PodcastProvider):
 
         # Check status code valid
         if get_login_service.status_code != 200:
-            # TODO: raise exception
-            # f"Could not get login page - Service responded with status code {post_login_service.status_code}"
-            return False
+            raise PodcastProviderError(f"Could not get login page - Service responded with status code "
+                                       f"{get_login_service.status_code}")
 
         # Status code valid, extract hidden parameters
         get_login_soup = BeautifulSoup(get_login_service.content, features="html.parser")
@@ -52,9 +52,8 @@ class UomPodcastProvider(PodcastProvider):
 
         # Check status code valid
         if post_login_service.status_code != 200:
-            # TODO: raise exception
-            # f"Could not log in - Service responded with status code {post_login_service.status_code}"
-            return False
+            raise PodcastProviderError(f"Could not log in - Service responded with status code "
+                                       f"{post_login_service.status_code}")
 
         # Status code valid, parse HTML
         post_login_soup = BeautifulSoup(post_login_service.content, features="html.parser")
@@ -74,9 +73,8 @@ class UomPodcastProvider(PodcastProvider):
 
         # Check status code valid
         if get_video_service_base.status_code != 200:
-            # TODO raise exception
-            # f"Could not get video service: service responded with status code {get_video_service_base.status_code}"
-            return []
+            raise PodcastProviderError(f"Could not get video service - Service responded with status code "
+                                       f"{get_video_service_base.status_code}")
 
         # Status code valid, extract courses
         get_video_service_base_soup = BeautifulSoup(get_video_service_base.content, features="html.parser")
@@ -94,14 +92,13 @@ class UomPodcastProvider(PodcastProvider):
         :param course: The course to get the podcasts for.
         :return: A list of URLs for podcasts in the course.
         """
+
         get_video_service_course = self.session.get(self.settings_profile.video_service_base_url + course.url)
 
         # Check status code valid
         if get_video_service_course.status_code != 200:
-            # TODO raise exception
-            # f"Could not get podcasts for {course_li.a.string} - Service responded with status code "
-            # f"{get_video_service_course.status_code}"
-            return []
+            raise PodcastProviderError(f"Could not get podcasts for {course.name} - Service responded with status "
+                                       f"code {get_video_service_course.status_code}")
 
         # Success code valid, extract course names
         get_video_service_course_soup = BeautifulSoup(get_video_service_course.content, features="html.parser")
@@ -118,15 +115,14 @@ class UomPodcastProvider(PodcastProvider):
 
         :param podcast: The podcast to get the download response for.
         """
+
         # Get podcast webpage
         get_video_service_podcast_page = self.session.get(self.settings_profile.video_service_base_url + podcast.url)
 
         # Check status code valid
         if get_video_service_podcast_page.status_code != 200:
-            # TODO raise exception
-            # f"Could not get podcast webpage for {podcast.name}"
-            # f" - Service responded with status code {get_video_service_podcast_page.status_code}"
-            return
+            raise PodcastProviderError(f"Could not get podcast webpage for {podcast.name} - Service responded with "
+                                       f"status code {get_video_service_podcast_page.status_code}")
 
         # Status code valid, parse HTML
         get_video_service_podcast_page_soup = BeautifulSoup(get_video_service_podcast_page.content,
@@ -135,9 +131,7 @@ class UomPodcastProvider(PodcastProvider):
         download_button = get_video_service_podcast_page_soup.find("a", id="downloadButton")
 
         if not download_button or not download_button["href"]:
-            # TODO raise exception
-            # f"Could not find download link for podcast {podcast.name}"
-            return
+            raise PodcastProviderError(f"Could not find download link for podcast {podcast.name}")
 
         podcast_src = self.settings_profile.video_service_base_url + download_button["href"]
 
@@ -146,9 +140,7 @@ class UomPodcastProvider(PodcastProvider):
 
         # Check status code valid
         if get_video_service_podcast.status_code != 200:
-            # TODO raise exception
-            # f"Could not get podcast for {podcast.name} - Service responded with status code "
-            # f"{get_video_service_podcast.status_code}"
-            return
+            raise PodcastProviderError(f"Could not get podcast for {podcast.name} - Service responded with "
+                                       f"status code {get_video_service_podcast.status_code}")
 
         return get_video_service_podcast

@@ -9,6 +9,9 @@ from model import Course, Podcast, Profile
 class PodcastProvider(ABC):
     """Provides methods to interact with a generic podcast source.
 
+    Any forseen errors caused by the provider will raise a PodcastProviderError exception, which should be handled
+    for all methods, including the constructor.
+
     Attributes:
         settings_profile    The current settings profile.
     """

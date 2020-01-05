@@ -8,7 +8,7 @@ import string
 import sys
 import time
 
-from logic import UomPodcastProvider
+from logic import PodcastProvider, PodcastProviderError, UomPodcastProvider
 from model import Download, DownloadStatus, Profile
 
 # Check python version
@@ -43,22 +43,37 @@ else:
     password = getpass.getpass("Please enter your password: ")
 
 # Initialise podcast provider
-web_provider = UomPodcastProvider(settings)
+try:
+    web_provider: PodcastProvider = UomPodcastProvider(settings)
+except PodcastProviderError as err:
+    # Error whilst logging on
+    print(err)
+    sys.exit(2)
 
 # Attempt log in
 print("Logging on")
 
-if not web_provider.login(username, password):
-    # Login unsuccessful
-    print("Login incorrect")
-    sys.exit(1)
+try:
+    if not web_provider.login(username, password):
+        # Login unsuccessful
+        print("Login incorrect")
+        sys.exit(1)
+except PodcastProviderError as err:
+    # Error whilst logging on
+    print(err)
+    sys.exit(3)
 
 # Login successful
 
 # Get list of courses from video page
 print("Getting course list")
 
-courses = web_provider.get_course_list()
+try:
+    courses = web_provider.get_course_list()
+except PodcastProviderError as err:
+    # Error whilst getting course list
+    print(err)
+    sys.exit(4)
 
 
 # Filters all invalid characters from a file path name
@@ -78,7 +93,12 @@ def download_podcast(download: Download):
     download.status = DownloadStatus.STARTING
 
     # Get download response
-    http_download_response = web_provider.get_podcast_stream(download.podcast)
+    try:
+        http_download_response = web_provider.get_podcast_stream(download.podcast)
+    except PodcastProviderError as err:
+        # Error whilst logging on
+        download.set_error(str(err))
+        return
 
     # Get download size
     download.status = DownloadStatus.DOWNLOADING
@@ -117,7 +137,12 @@ for course in courses:
     course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course.name)))
     os.makedirs(course_dir, exist_ok=True)
 
-    podcasts = list(web_provider.get_course_podcasts(course))
+    try:
+        podcasts = list(web_provider.get_course_podcasts(course))
+    except PodcastProviderError as err:
+        # Error whilst getting course podcast list
+        print(err)
+        continue
 
     podcast_no = len(podcasts) + 1
     for podcast in podcasts:
@@ -144,7 +169,7 @@ print("--------------------")
 # Terminate early if nothing in queue
 if len(queue) == 0:
     print("Nothing to do")
-    sys.exit(1)
+    sys.exit(0)
 
 # Add tasks
 with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
