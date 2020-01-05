@@ -8,9 +8,7 @@ import string
 import sys
 import time
 
-import requests
-from bs4 import BeautifulSoup
-
+from logic import PodcastProvider, PodcastProviderError, UomPodcastProvider
 from model import Download, DownloadStatus, Profile
 
 # Check python version
@@ -44,59 +42,38 @@ else:
     username = input("Please enter your username: ")
     password = getpass.getpass("Please enter your password: ")
 
-# Create cookie session
-session = requests.session()
-
-# First, get login page for hidden params
-print("Getting login page")
-get_login_service = session.get(settings.login_service_url)
-
-# Check status code valid
-if get_login_service.status_code != 200:
-    print("Could not get login page: service responded with status code", get_login_service.status_code)
-    sys.exit(1)
-
-# Status code valid, parse HTML
-get_login_soup = BeautifulSoup(get_login_service.content, features="html.parser")
-param_execution = get_login_soup.find("input", {"name": "execution"})["value"]
-param_lt = get_login_soup.find("input", {"name": "lt"})["value"]
-
-# Send login request
-print("Logging on")
-post_login_service = session.post(settings.login_service_url,
-                                  {"username": username,
-                                   "password": password,
-                                   "lt": param_lt,
-                                   "execution": param_execution,
-                                   "_eventId": "submit",
-                                   "submit": "Login"})
-
-# Check status code valid
-if post_login_service.status_code != 200:
-    print("Could not log in: service responded with status code", post_login_service.status_code)
+# Initialise podcast provider
+try:
+    web_provider: PodcastProvider = UomPodcastProvider(settings)
+except PodcastProviderError as err:
+    # Error whilst logging on
+    print(err)
     sys.exit(2)
 
-# Status code valid, parse HTML
-post_login_soup = BeautifulSoup(post_login_service.content, features="html.parser")
-login_result_div = post_login_soup.find("div", {"id": "msg"})
+# Attempt log in
+print("Logging on")
 
-# Check if login successful
-if "errors" in login_result_div["class"]:
-    print("Login failed:", login_result_div.string)
+try:
+    if not web_provider.login(username, password):
+        # Login unsuccessful
+        print("Login incorrect")
+        sys.exit(1)
+except PodcastProviderError as err:
+    # Error whilst logging on
+    print(err)
     sys.exit(3)
 
 # Login successful
 
 # Get list of courses from video page
 print("Getting course list")
-get_video_service_base = session.get(settings.video_service_base_url + "/lectures")
 
-# Check status code valid
-if get_video_service_base.status_code != 200:
-    print("Could not get video service: service responded with status code", get_video_service_base.status_code)
+try:
+    courses = web_provider.get_course_list()
+except PodcastProviderError as err:
+    # Error whilst getting course list
+    print(err)
     sys.exit(4)
-
-# Status code valid
 
 
 # Filters all invalid characters from a file path name
@@ -111,113 +88,78 @@ def format_size(size_in_bytes):
 
 # Downloads a podcast using the href and a target location.
 # Logging messages will use the name to identify which podcast download request it is related to.
-def download_podcast(podcast: Download):
+def download_podcast(download: Download):
     # Set starting status
-    podcast.status = DownloadStatus.STARTING
+    download.status = DownloadStatus.STARTING
 
-    # Get podcast webpage
-    get_video_service_podcast_page = session.get(settings.video_service_base_url + podcast.podcast_link)
-
-    # Check status code valid
-    if get_video_service_podcast_page.status_code != 200:
-        podcast.set_error(f"Could not get podcast webpage for {podcast.name}"
-                          f" - Service responded with status code {get_video_service_podcast_page.status_code}")
-        return
-
-    # Status code valid, parse HTML
-    get_video_service_podcast_page_soup = BeautifulSoup(get_video_service_podcast_page.content,
-                                                        features="html.parser")
-
-    download_button = get_video_service_podcast_page_soup.find("a", id="downloadButton")
-
-    if not download_button or not download_button["href"]:
-        podcast.set_error(f"Could not find download link for podcast {podcast.name}")
-        return
-
-    podcast_src = settings.video_service_base_url + download_button["href"]
-
-    # Get podcast
-    get_video_service_podcast = session.get(podcast_src, stream=True)
-
-    # Check status code valid
-    if get_video_service_podcast.status_code != 200:
-        podcast.set_error(f"Could not get podcast for {podcast.name} - Service responded with status code "
-                          f"{get_video_service_podcast.status_code}")
+    # Get download response
+    try:
+        http_download_response = web_provider.get_podcast_stream(download.podcast)
+    except PodcastProviderError as err:
+        # Error whilst logging on
+        download.set_error(str(err))
         return
 
     # Get download size
-    podcast.status = DownloadStatus.DOWNLOADING
-    podcast.total_size = int(get_video_service_podcast.headers['Content-Length'])
+    download.status = DownloadStatus.DOWNLOADING
+    download.total_size = int(http_download_response.headers['Content-Length'])
 
     # Write to file with partial extension
-    with open(podcast.download_path + ".partial", "wb") as f:
-        for chunk in get_video_service_podcast:
+    with open(download.download_path + ".partial", "wb") as f:
+        for chunk in http_download_response:
             f.write(chunk)
-            podcast.progress += len(chunk)
+            download.progress += len(chunk)
 
     # Rename completed file
-    os.rename(podcast.download_path + ".partial", podcast.download_path)
+    os.rename(download.download_path + ".partial", download.download_path)
 
     # Mark as complete
-    podcast.set_complete()
+    download.set_complete()
 
 
 queue = []    # List of downloads
 futures = []  # List of executable tasks
 
-# Parse HTML
-get_video_service_base_soup = BeautifulSoup(get_video_service_base.content, features="html.parser")
-
-for course_li in get_video_service_base_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[3].find_all("li", {
-        "class": "series"}):
+for course in courses:
     # For each course
 
     # Check if course is ignored
-    if settings.exclude and re.match(settings.exclude, course_li.a.string):
-        print("-" * (9 + len(course_li.a.string)))
-        print("Ignoring", course_li.a.string)
+    if settings.exclude and re.match(settings.exclude, course.name):
+        print("-" * (9 + len(course.name)))
+        print("Ignoring", course.name)
         continue
 
-    print("-" * (21 + len(course_li.a.string)))
-    print("Getting podcasts for", course_li.a.string)
-    print("-" * (21 + len(course_li.a.string)))
-    get_video_service_course = session.get(settings.video_service_base_url + course_li.a["href"])
+    # Course not ignored, get podcasts
+    print("-" * (21 + len(course.name)))
+    print("Getting podcasts for", course.name)
+    print("-" * (21 + len(course.name)))
 
-    # Check status code valid
-    if get_video_service_course.status_code != 200:
-        print("Could not get podcasts for", course_li.a.string, "- Service responded with status code",
-              get_video_service_course.status_code)
-        continue
-
-    # Success code valid, create directory for podcasts
-    course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course_li.a.string)))
+    course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course.name)))
     os.makedirs(course_dir, exist_ok=True)
 
-    # Parse HTML
-    get_video_service_course_soup = BeautifulSoup(get_video_service_course.content, features="html.parser")
-    podcasts = get_video_service_course_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[5].find_all("li", {
-        "class": "episode"})
+    try:
+        podcasts = list(web_provider.get_course_podcasts(course))
+    except PodcastProviderError as err:
+        # Error whilst getting course podcast list
+        print(err)
+        continue
+
     podcast_no = len(podcasts) + 1
-    for podcast_li in podcasts:
+    for podcast in podcasts:
         # For each podcast
+
         podcast_no -= 1
 
         # Check podcast not already downloaded
         download_path = os.path.expanduser(os.path.join(course_dir, f"{podcast_no:02d} - " +
-                                                        filter_path_name(podcast_li.a.string) + ".mp4"))
+                                                        filter_path_name(podcast.name) + ".mp4"))
         if os.path.isfile(download_path):
-            print("Skipping podcast", podcast_li.a.string, "(already exists)")
+            print("Skipping podcast", podcast.name, "(already exists)")
             continue
 
-        # Podcast not yet downloaded
-        print("Queuing podcast", podcast_li.a.string)
-
-        # Queue podcast for downloading
-        queue.append(Download(
-            name=podcast_li.a.string,
-            podcast_link=podcast_li.a["href"],
-            download_path=download_path
-        ))
+        # Podcast not yet downloaded, add to queue
+        print("Queuing podcast", podcast.name)
+        queue.append(Download(podcast, download_path))
 
 # Start downloads
 print("--------------------")
@@ -227,7 +169,7 @@ print("--------------------")
 # Terminate early if nothing in queue
 if len(queue) == 0:
     print("Nothing to do")
-    sys.exit(1)
+    sys.exit(0)
 
 # Add tasks
 with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
@@ -249,7 +191,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
 
     # Primary output
     for index in range(output_length):
-        print(queue[index].name + ": Waiting")
+        print(queue[index].podcast.name + ": Waiting")
 
     if truncated:
         print(f"[{len(queue) - output_length} downloads hidden]", end="")
@@ -292,7 +234,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
             if download.total_size > 0:
                 percent = round((download.progress / download.total_size) * settings.progress_bar_size)
 
-            output += download.name
+            output += download.podcast.name
             if download.status == DownloadStatus.DOWNLOADING:
                 output += ": Downloading [" + (u"\u2588" * percent) + \
                     (" " * (settings.progress_bar_size - percent)) + "] " + \
@@ -318,7 +260,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
         elif download.status == DownloadStatus.ERROR:
             report_errors.append(download)
         else:
-            print(f"Unexpected status [{download.status.name}] for completed podcast {download.name}")
+            print(f"Unexpected status [{download.status.name}] for completed podcast {download.podcast.name}")
 
     download_string = "downloads"
     if len(report_complete) == 1:
@@ -335,4 +277,4 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downl
 
         print(f"{len(report_errors)} {error_string} occurred:")
         for error_podcast in report_errors:
-            print("* " + error_podcast.name + ": " + error_podcast.error_message)
+            print(f"* {error_podcast.podcast.name}: {error_podcast.error_message}")
