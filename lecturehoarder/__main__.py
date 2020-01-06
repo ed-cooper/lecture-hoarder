@@ -7,6 +7,7 @@ import re
 import string
 import sys
 import time
+from typing import List
 
 from yaml import YAMLError
 
@@ -74,27 +75,36 @@ def download_podcast(download: Download, web_provider: PodcastProvider) -> None:
     download.set_complete()
 
 
-def main() -> None:
-    """The main lecture-hoarder sub-routine."""
+def check_python() -> None:
+    """Checks the Python version is compatible and exits if not."""
 
-    # Check python version
     if sys.hexversion < 0x03060000:
         # Python version is less than 3.6
         print("This program requires Python 3.6 or later")
         print("Please update your installation")
         sys.exit(1)
 
+
+def setup_tui() -> None:
+    """Sets up the console for output."""
+
     # Enable ANSI codes on Windows
     if os.name == "nt":
         import subprocess
         subprocess.call('', shell=True)
 
-    # Get user settings
-    settings_path = "~/lecture-hoarder-settings.yaml"
+
+def get_settings() -> Profile:
+    """Gets the user settings profile for the application, or exits on failure.
+
+    :return: The user settings profile.
+    """
+
+    settings_path: str = "~/lecture-hoarder-settings.yaml"
     if len(sys.argv) > 1:
         settings_path = sys.argv[1]  # User has specified custom settings file location
 
-    settings = Profile()
+    settings: Profile = Profile()
     try:
         settings.load_from_file(settings_path)
     except IOError:
@@ -113,13 +123,85 @@ def main() -> None:
         print(f"Could not load settings file - {err}")
         sys.exit(2)
 
-    # Get username and password
-    if settings.auto_login:
-        username = settings.username
-        password = settings.password
+    return settings
+
+
+def print_download_queue(queue: List[Download], settings: Profile) -> int:
+    """Prints the current download queue to the terminal.
+
+    :param queue:       The current download queue.
+    :param settings:    The program settings profile.
+    :return:            The output length, for resetting the cursor afterwards.
+    """
+
+    # Get terminal size
+    if os.name == "nt":
+        terminal_width, terminal_height = os.get_terminal_size()  # Windows
     else:
-        username = input("Please enter your username: ")
-        password = getpass.getpass("Please enter your password: ")
+        terminal_width, terminal_height = os.get_terminal_size(0)  # Linux (supports piping)
+
+    # Check if we need to truncate the output
+    output_length = len(queue)
+    truncated = False
+    if output_length > terminal_height - 1:
+        output_length = terminal_height - 1
+        truncated = True
+
+    # Output downloads
+    output = ""
+    for index in range(output_length):
+        download = queue[index]
+
+        output += download.podcast.name
+        if download.status == DownloadStatus.DOWNLOADING:
+            percent = 0
+            if download.total_size > 0:
+                percent = round((download.progress / download.total_size) * settings.progress_bar_size)
+
+            output += ": Downloading [" + (u"\u2588" * percent) + \
+                      (" " * (settings.progress_bar_size - percent)) + "] " + \
+                      str(format_size(download.progress)).rjust(6) + " / " + \
+                      str(format_size(download.total_size)) + "\n"
+        else:
+            output += ": " + download.status.value + "\n"
+
+    if truncated:
+        output += f"[{len(queue) - output_length} downloads hidden]"
+
+    # Print final output
+    print(output, end="", flush=True)
+
+    # Used for resetting the cursor
+    return output_length
+
+
+def print_report(report_complete: List[Download], report_errors: List[Download]) -> None:
+    """Prints a report for the completed downloads."""
+
+    download_string = "downloads" if len(report_complete) != 1 else "download"
+    print(f"{len(report_complete)} {download_string} completed successfully")
+
+    if len(report_errors) == 0:
+        print("No errors occurred")
+    else:
+        error_string = "errors" if len(report_errors) != 1 else "error"
+        print(f"{len(report_errors)} {error_string} occurred:")
+
+        for error_podcast in report_errors:
+            print(f"* {error_podcast.podcast.name}: {error_podcast.error_message}")
+
+
+def main() -> None:
+    """The main lecture-hoarder sub-routine."""
+
+    # Check python version
+    check_python()
+
+    # Setup command line interface
+    setup_tui()
+
+    # Get user settings profile
+    settings: Profile = get_settings()
 
     # Initialise podcast provider
     try:
@@ -128,6 +210,14 @@ def main() -> None:
         # Error initialising provider
         print(err)
         sys.exit(3)
+
+    # Get username and password
+    if settings.auto_login:
+        username = settings.username
+        password = settings.password
+    else:
+        username = input("Please enter your username: ")
+        password = getpass.getpass("Please enter your password: ")
 
     # Attempt log in
     print("Logging on")
@@ -154,7 +244,7 @@ def main() -> None:
         print(err)
         sys.exit(3)
 
-    queue = []    # List of downloads
+    queue: List[Download] = []  # List of downloads
     futures = []  # List of executable tasks
 
     for course in courses:
@@ -208,36 +298,19 @@ def main() -> None:
         print("Nothing to do")
         sys.exit(0)
 
+    # Print all downloads
+    output_length: int = print_download_queue(queue, settings)
+
     # Add tasks
     with concurrent.futures.ThreadPoolExecutor(max_workers=settings.concurrent_downloads) as executor:
         for download in queue:
             futures.append(executor.submit(download_podcast, download, web_provider))
 
-        # Get terminal size
-        if os.name == "nt":
-            terminal_width, terminal_height = os.get_terminal_size()  # Windows
-        else:
-            terminal_width, terminal_height = os.get_terminal_size(0)  # Linux (supports piping)
-
-        # Check if we need to truncate the output
-        output_length = len(queue)
-        truncated = False
-        if output_length > terminal_height - 1:
-            output_length = terminal_height - 1
-            truncated = True
-
-        # Primary output
-        for index in range(output_length):
-            print(f"{queue[index].podcast.name}: {queue[index].status.value}")
-
-        if truncated:
-            print(f"[{len(queue) - output_length} downloads hidden]", end="")
-
         # Loop until all downloads completed
         complete_downloads = 0
         total_downloads = len(queue)
-        report_complete = []
-        report_errors = []
+        report_complete: List[Download] = []
+        report_errors: List[Download] = []
         while complete_downloads < total_downloads:
             # Check whether there are any remaining downloads
             complete_downloads = 0
@@ -246,7 +319,7 @@ def main() -> None:
                     complete_downloads += 1
 
             # Reset cursor
-            output = f"\033[{output_length}F\033[0J"
+            print(f"\033[{output_length}F\033[0J", end="")
 
             # Remove stale downloads
             for download in queue:
@@ -257,60 +330,26 @@ def main() -> None:
                     report_errors.append(download)
                     queue.remove(download)
 
-            # Check if we need to truncate downloads
-            output_length = len(queue)
-            truncated = False
-            if output_length > terminal_height - 1:
-                output_length = terminal_height - 1
-                truncated = True
-
-            # Output downloads
-            for index in range(output_length):
-                download = queue[index]
-                percent = 0
-                if download.total_size > 0:
-                    percent = round((download.progress / download.total_size) * settings.progress_bar_size)
-
-                output += download.podcast.name
-                if download.status == DownloadStatus.DOWNLOADING:
-                    output += ": Downloading [" + (u"\u2588" * percent) + \
-                        (" " * (settings.progress_bar_size - percent)) + "] " + \
-                        str(format_size(download.progress)).rjust(6) + " / " + \
-                        str(format_size(download.total_size)) + "\n"
-                else:
-                    output += ": " + download.status.value + "\n"
-
-            if truncated:
-                output += f"[{len(queue) - output_length} downloads hidden]"
-
-            print(output, end="", flush=True)
+            # Print all downloads
+            output_length = print_download_queue(queue, settings)
 
             # Wait
             time.sleep(0.3)
 
-        print(f"\033[{output_length}F\033[0J", end="")
+    # Reset cursor
+    print(f"\033[{output_length}F\033[0J", end="")
 
-        # Add remaining downloads to report
-        for download in queue:
-            if download.status == DownloadStatus.COMPLETE:
-                report_complete.append(download)
-            elif download.status == DownloadStatus.ERROR:
-                report_errors.append(download)
-            else:
-                print(f"Unexpected status [{download.status.name}] for completed podcast {download.podcast.name}")
-
-        # Print report
-        download_string = "downloads" if len(report_complete) != 1 else "download"
-        print(f"{len(report_complete)} {download_string} completed successfully")
-
-        if len(report_errors) == 0:
-            print("No errors occurred")
+    # Add remaining downloads to report
+    for download in queue:
+        if download.status == DownloadStatus.COMPLETE:
+            report_complete.append(download)
+        elif download.status == DownloadStatus.ERROR:
+            report_errors.append(download)
         else:
-            error_string = "errors" if len(report_errors) != 1 else "error"
-            print(f"{len(report_errors)} {error_string} occurred:")
+            print(f"Unexpected status [{download.status.name}] for completed podcast {download.podcast.name}")
 
-            for error_podcast in report_errors:
-                print(f"* {error_podcast.podcast.name}: {error_podcast.error_message}")
+    # Print report
+    print_report(report_complete, report_errors)
 
 
 # Run program if started from the command line
