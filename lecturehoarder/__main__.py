@@ -354,9 +354,9 @@ def main() -> None:
             # Wait
             time.sleep(0.3)
 
-        # Wait for futures to complete (and raise any exceptions)
+        # Wait for futures to complete (and cause amy exceptions to be raised)
         for idx, future in enumerate(concurrent.futures.as_completed(futures)):
-            res = future.result()  # This will also raise any exceptions
+            future.result()
 
     # Reset cursor
     print(f"\033[{output_length}F\033[0J", end="")
