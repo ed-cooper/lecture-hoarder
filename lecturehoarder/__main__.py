@@ -150,6 +150,9 @@ def print_download_queue(queue: List[Download], settings: Profile) -> int:
     else:
         terminal_width, terminal_height = os.get_terminal_size(0)  # Linux (supports piping)
 
+    # Calculate max length for podcast names
+    max_name_length = terminal_width - settings.progress_bar_size - 35
+
     # Check if we need to truncate the output
     output_length = len(queue)
     truncated = False
@@ -162,7 +165,11 @@ def print_download_queue(queue: List[Download], settings: Profile) -> int:
     for index in range(output_length):
         download = queue[index]
 
-        output += download.podcast.name
+        output += download.podcast.name[:max_name_length]
+
+        if len(download.podcast.name) > max_name_length:
+            output += "..."
+
         if download.status == DownloadStatus.DOWNLOADING:
             percent = 0
             if download.total_size > 0:
