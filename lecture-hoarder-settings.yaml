@@ -1,7 +1,0 @@
-auto_login: No
-username: ""
-password: ""
-base_dir: "~/Documents/Lectures"
-concurrent_downloads: 4
-progress_bar_size: 30
-exclude: ""
