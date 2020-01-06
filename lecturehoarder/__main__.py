@@ -281,20 +281,16 @@ def main() -> None:
             else:
                 print(f"Unexpected status [{download.status.name}] for completed podcast {download.podcast.name}")
 
-        download_string = "downloads"
-        if len(report_complete) == 1:
-            download_string = "download"
-
+        # Print report
+        download_string = "downloads" if len(report_complete) != 1 else "download"
         print(f"{len(report_complete)} {download_string} completed successfully")
 
         if len(report_errors) == 0:
             print("No errors occurred")
         else:
-            error_string = "errors"
-            if len(report_errors) == 1:
-                error_string = "error"
-
+            error_string = "errors" if len(report_errors) != 1 else "error"
             print(f"{len(report_errors)} {error_string} occurred:")
+
             for error_podcast in report_errors:
                 print(f"* {error_podcast.podcast.name}: {error_podcast.error_message}")
 
