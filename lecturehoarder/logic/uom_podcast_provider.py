@@ -11,8 +11,6 @@ from model import Course, Podcast, Profile
 class UomPodcastProvider(PodcastProvider):
     """Provides podcasts from the University of Manchester video service.
 
-    Uses the login_service_url and video_service_base_url Profile attributes.
-
     Attributes:
         login_service_url           The URL of the login service.
         session                     The current cookie session, used for maintaining state.
@@ -39,6 +37,9 @@ class UomPodcastProvider(PodcastProvider):
 
         :param username: The username for the service.
         :param password: The password for the service.
+
+        :raises PodcastProviderError: If an error occurs logging in.
+
         :return: True if logged in, False otherwise.
         """
 
@@ -79,6 +80,8 @@ class UomPodcastProvider(PodcastProvider):
     def get_course_list(self) -> Iterator[Course]:
         """Gets the list of available courses.
 
+        :raises PodcastProviderError: If an error occurs getting the course list.
+
         :return: A list of URLs for each course podcast home.
         """
 
@@ -102,6 +105,9 @@ class UomPodcastProvider(PodcastProvider):
         """Gets the list of available podcasts for the specified course.
 
         :param course: The course to get the podcasts for.
+
+        :raises PodcastProviderError: If an error occurs getting the course podcasts.
+
         :return: A list of URLs for podcasts in the course.
         """
 
@@ -124,6 +130,8 @@ class UomPodcastProvider(PodcastProvider):
         """Gets the HTTP response for the specified podcast download.
 
         :param podcast: The podcast to get the download response for.
+
+        :raises PodcastProviderError: If an error occurs getting the podcast downloader.
         """
 
         # Get podcast webpage

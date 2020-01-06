@@ -9,9 +9,6 @@ from model import Course, Podcast, Profile
 class PodcastProvider(ABC):
     """Provides methods to interact with a generic podcast source.
 
-    Any forseen errors caused by the provider will raise a PodcastProviderError exception, which should be handled
-    for all methods, including the constructor.
-
     Attributes:
         settings_profile    The current settings profile.
     """
@@ -22,6 +19,8 @@ class PodcastProvider(ABC):
         """Creates a new instance of the podcast provider.
 
         :param settings_profile: The current settings profile.
+
+        :raises PodcastProviderError: If an error occurs setting up the provider.
         """
         self.settings_profile = settings_profile
 
@@ -31,6 +30,9 @@ class PodcastProvider(ABC):
 
         :param username: The username for the provider.
         :param password: The password for the provider.
+
+        :raises PodcastProviderError: If an error occurs logging in.
+
         :return: True if logged in, False otherwise.
         """
         pass
@@ -38,6 +40,8 @@ class PodcastProvider(ABC):
     @abstractmethod
     def get_course_list(self) -> Iterator[Course]:
         """Gets the list of available courses.
+
+        :raises PodcastProviderError: If an error occurs getting the course list.
 
         :return: A list of course IDs."""
         pass
@@ -47,6 +51,9 @@ class PodcastProvider(ABC):
         """Gets the list of available podcasts for the specified course.
 
         :param course: The course to get the podcasts for.
+
+        :raises PodcastProviderError: If an error occurs getting the course podcasts.
+
         :return: A list of podcast IDs.
         """
         pass
@@ -56,5 +63,7 @@ class PodcastProvider(ABC):
         """Gets the HTTP response for the specified podcast download.
 
         :param podcast: The podcast to get the download response for.
+
+        :raises PodcastProviderError: If an error occurs getting the podcast downloader.
         """
         pass
