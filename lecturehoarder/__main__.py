@@ -18,6 +18,7 @@ from model import Download, DownloadStatus, Profile
 # The list of characters that can be used in filenames
 VALID_FILE_CHARS = f"-_.() {string.ascii_letters}{string.digits}"
 
+
 def filter_path_name(path: str) -> str:
     """Filters all invalid characters from a file path name.
 
