@@ -145,12 +145,12 @@ def main() -> None:
         # Check if course is ignored
         if settings.exclude and re.match(settings.exclude, course.name):
             print("-" * (9 + len(course.name)))
-            print("Ignoring", course.name)
+            print(f"Ignoring {course.name}")
             continue
 
         # Course not ignored, get podcasts
         print("-" * (21 + len(course.name)))
-        print("Getting podcasts for", course.name)
+        print(f"Getting podcasts for {course.name}")
         print("-" * (21 + len(course.name)))
 
         course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course.name)))
@@ -170,14 +170,14 @@ def main() -> None:
             podcast_no -= 1
 
             # Check podcast not already downloaded
-            download_path = os.path.expanduser(os.path.join(course_dir, f"{podcast_no:02d} - " +
-                                                            filter_path_name(podcast.name) + ".mp4"))
+            download_path = os.path.expanduser(os.path.join(course_dir,
+                                                            f"{podcast_no:02d} - {filter_path_name(podcast.name)}.mp4"))
             if os.path.isfile(download_path):
-                print("Skipping podcast", podcast.name, "(already exists)")
+                print(f"Skipping podcast {podcast.name} (already exists)")
                 continue
 
             # Podcast not yet downloaded, add to queue
-            print("Queuing podcast", podcast.name)
+            print(f"Queuing podcast {podcast.name}")
             queue.append(Download(podcast, download_path))
 
     # Start downloads
@@ -210,7 +210,7 @@ def main() -> None:
 
         # Primary output
         for index in range(output_length):
-            print(queue[index].podcast.name + ": Waiting")
+            print(f"{queue[index].podcast.name}: {queue[index].status.value}")
 
         if truncated:
             print(f"[{len(queue) - output_length} downloads hidden]", end="")
@@ -228,7 +228,7 @@ def main() -> None:
                     complete_downloads += 1
 
             # Reset cursor
-            output = "\033[" + str(output_length) + "F\033[0J"
+            output = f"\033[{output_length}F\033[0J"
 
             # Remove stale downloads
             for download in queue:
@@ -270,7 +270,7 @@ def main() -> None:
             # Wait
             time.sleep(0.3)
 
-        print("\033[" + str(output_length) + "F\033[0J", end="")
+        print(f"\033[{output_length}F\033[0J", end="")
 
         # Add remaining downloads to report
         for download in queue:
