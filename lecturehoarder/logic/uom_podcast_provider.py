@@ -9,6 +9,14 @@ from model import Course, Podcast, Profile
 
 
 class UomPodcastProvider(PodcastProvider):
+    """Provides podcasts from the University of Manchester video service.
+
+    Uses the login_service_url and video_service_base_url Profile attributes.
+
+    Attributes:
+        session     The current cookie session, used for maintaining state.
+    """
+
     session: requests.sessions = None
 
     def __init__(self, settings_profile: Profile):
@@ -16,6 +24,7 @@ class UomPodcastProvider(PodcastProvider):
 
         :param settings_profile: The current settings profile.
         """
+
         super().__init__(settings_profile)
 
         self.session = requests.session()
