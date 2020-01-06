@@ -43,7 +43,7 @@ def handle_sigint(signal, frame) -> None:
     """Gracefully exit after sigint (Ctrl-C) signal."""
 
     print("Terminated by user")
-    exit(0)
+    sys.exit(0)
 
 
 # Downloads a podcast using the href and a target location.
