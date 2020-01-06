@@ -4,6 +4,7 @@ import concurrent.futures
 import getpass
 import os
 import re
+import signal
 import string
 import sys
 import time
@@ -16,7 +17,6 @@ from model import Download, DownloadStatus, Profile
 
 # The list of characters that can be used in filenames
 VALID_FILE_CHARS = f"-_.() {string.ascii_letters}{string.digits}"
-
 
 def filter_path_name(path: str) -> str:
     """Filters all invalid characters from a file path name.
@@ -36,6 +36,13 @@ def format_size(size_in_bytes: int) -> str:
     """
 
     return str(round(size_in_bytes / (1000 * 1000))) + " MB"
+
+
+def handle_sigint(signal, frame) -> None:
+    """Gracefully exit after sigint (Ctrl-C) signal."""
+
+    print("Terminated by user")
+    exit(0)
 
 
 # Downloads a podcast using the href and a target location.
@@ -92,6 +99,9 @@ def setup_tui() -> None:
     if os.name == "nt":
         import subprocess
         subprocess.call('', shell=True)
+
+    # Handle sigint
+    signal.signal(signal.SIGINT, handle_sigint)
 
 
 def get_settings() -> Profile:
