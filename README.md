@@ -18,24 +18,24 @@ Please remember to back your files up regularly.
 *Requires Python 3.6+*
 
 1) Clone the repository
-```bash
+```
 git clone git@github.com:ed-cooper/lecture-hoarder.git
 ```
 
 2) Go to the install directory
-```bash
+```
 cd lecture-hoarder
 ```
 
 3) Install the dependencies
-```bash
+```
 pip3 install -r requirements.txt
 ```
 
 # Simple Usage
 
 Inside your installation directory, run:
-```bash
+```
 python3 lecturehoarder
 ```
 
@@ -58,7 +58,7 @@ For information on configuration, please see
 # Useful Notes
 Podcasts take a long time to download, so the first run may take a while to complete.
 
-If you interrupt the program while downloading, you may find ```.partial``` files in
+If you interrupt the program while downloading, you may find `.partial` files in
 the output directory. They are incomplete downloads and can safely be ignored/deleted.
 
 The program will only download podcasts that you have not already downloaded, meaning
