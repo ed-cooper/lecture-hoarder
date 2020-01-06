@@ -96,8 +96,6 @@ class UomPodcastProvider(PodcastProvider):
         course_items_html = get_video_service_base_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[3]\
             .find_all("li", {"class": "series"})
 
-        # TODO raise exception if course items not found
-
         return map(lambda x: Course(x.a.string, x.a["href"]), course_items_html)
 
     def get_course_podcasts(self, course: Course) -> Iterator[Podcast]:
@@ -119,8 +117,6 @@ class UomPodcastProvider(PodcastProvider):
 
         podcasts_html = get_video_service_course_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[5].find_all("li", {
             "class": "episode"})
-
-        # TODO raise exception if podcasts not found
 
         return map(lambda x: Podcast(x.a.string, x.a["href"]), podcasts_html)
 
