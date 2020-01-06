@@ -8,6 +8,8 @@ import string
 import sys
 import time
 
+from yaml import YAMLError
+
 from logic import PodcastProvider, PodcastProviderError, UomPodcastProvider
 from model import Download, DownloadStatus, Profile
 
@@ -93,7 +95,23 @@ def main() -> None:
         settings_path = sys.argv[1]  # User has specified custom settings file location
 
     settings = Profile()
-    settings.load_from_file(settings_path)
+    try:
+        settings.load_from_file(settings_path)
+    except IOError:
+        # Could not open settings file, use default values
+        print("Using default settings")
+    except YAMLError as err:
+        # Parser error occurred
+        if hasattr(err, "context_mark") and hasattr(err, "problem"):
+            print(f"Could not parse settings file - bad syntax at line {err.context_mark.line + 1} char "
+                  f"{err.context_mark.column + 1}: {err.problem}")
+        else:
+            print("Could not parse settings file")
+        sys.exit(2)
+    except TypeError as err:
+        # Syntax fine, bad param type
+        print(f"Could not load settings file - {err}")
+        sys.exit(2)
 
     # Get username and password
     if settings.auto_login:
@@ -107,9 +125,9 @@ def main() -> None:
     try:
         web_provider: PodcastProvider = UomPodcastProvider(settings)
     except PodcastProviderError as err:
-        # Error whilst logging on
+        # Error initialising provider
         print(err)
-        sys.exit(2)
+        sys.exit(3)
 
     # Attempt log in
     print("Logging on")
@@ -134,7 +152,7 @@ def main() -> None:
     except PodcastProviderError as err:
         # Error whilst getting course list
         print(err)
-        sys.exit(4)
+        sys.exit(3)
 
     queue = []    # List of downloads
     futures = []  # List of executable tasks

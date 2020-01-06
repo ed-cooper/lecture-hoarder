@@ -23,12 +23,16 @@ class Profile:
     progress_bar_size: int = 30
     exclude: str = ""
 
-    def load_from_file(self, file_path: str):
+    def load_from_file(self, file_path: str) -> None:
         """Loads a settings profile from the specified YAML file.
 
-        Does not handle file load errors.
+        :param file_path:   The path to the YAML file.
 
-        :param file_path: The path to the YAML file.
+        :raises IOError:    If the file could not be opened.
+        :raises TypeError:  If a setting value was of the incorrect data type.
+        :raises YAMLError:  If the YAML file cannot be parsed.
+
+        :return:            True if the file successfully loaded, False otherwise.
         """
 
         # Open file stream
@@ -39,10 +43,12 @@ class Profile:
             # Import settings
             self.load_from_dict(settings_dict)
 
-    def load_from_dict(self, settings_dict: dict):
+    def load_from_dict(self, settings_dict: dict) -> None:
         """Loads a settings profile from the supplied dictionary.
 
-        :param settings_dict: The dictionary containing the settings values to load.
+        :param settings_dict:   The dictionary containing the settings values to load.
+
+        :raises TypeError:      If a setting value was of the incorrect data type.
         """
 
         self.load_setting(settings_dict, "auto_login", bool)
@@ -59,7 +65,10 @@ class Profile:
         :param settings_dict:   The input dictionary.
         :param setting_name:    The name of the setting to load, matching the dictionary key and attribute name.
         :param expected_type:   The expected type for the setting.
-        :return:                True on success, False if setting not found, TypeError if type validation fails.
+
+        :raises TypeError:      If a setting value was of the incorrect data type.
+
+        :return:                True on success, False if setting not found.
         """
 
         # Check key exists
@@ -68,7 +77,7 @@ class Profile:
 
         # Validate type
         if not isinstance(settings_dict[setting_name], expected_type):
-            raise TypeError(f"Setting {setting_name} must be of type {expected_type}")
+            raise TypeError(f"Setting {setting_name} must be of type {expected_type.__name__}")
 
         # Perform assignment
         setattr(self, setting_name, settings_dict[setting_name])
