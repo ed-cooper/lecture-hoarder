@@ -1,4 +1,4 @@
-"""Main command line entry point for lecturehoarder."""
+"""Main command line entry point for lecture-hoarder."""
 
 import concurrent.futures
 import getpass
@@ -15,19 +15,35 @@ from model import Download, DownloadStatus, Profile
 VALID_FILE_CHARS = f"-_.() {string.ascii_letters}{string.digits}"
 
 
-# Filters all invalid characters from a file path name
-def filter_path_name(path):
+def filter_path_name(path: str) -> str:
+    """Filters all invalid characters from a file path name.
+
+    :param path:    The file path to filter.
+    :return:        The filtered string.
+    """
+
     return "".join(c for c in path if c in VALID_FILE_CHARS)
 
 
-# Formats a download size as MB
-def format_size(size_in_bytes):
+def format_size(size_in_bytes: int) -> str:
+    """Formats a file size as MB.
+
+    :param size_in_bytes: The file size in bytes.
+    :return:              The string formatted size, as MB.
+    """
+
     return str(round(size_in_bytes / (1000 * 1000))) + " MB"
 
 
 # Downloads a podcast using the href and a target location.
 # Logging messages will use the name to identify which podcast download request it is related to.
-def download_podcast(download: Download, web_provider: PodcastProvider):
+def download_podcast(download: Download, web_provider: PodcastProvider) -> None:
+    """Executes a queued download operation.
+
+    :param download:        The download operation to perform.
+    :param web_provider:    The podcast provider.
+    """
+
     # Set starting status
     download.status = DownloadStatus.STARTING
 
@@ -56,8 +72,9 @@ def download_podcast(download: Download, web_provider: PodcastProvider):
     download.set_complete()
 
 
-# The main lecture-hoarder routine
-def main():
+def main() -> None:
+    """The main lecture-hoarder sub-routine."""
+
     # Check python version
     if sys.hexversion < 0x03060000:
         # Python version is less than 3.6
