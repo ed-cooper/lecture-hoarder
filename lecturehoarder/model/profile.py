@@ -13,8 +13,6 @@ class Profile:
         concurrent_downloads        The number of podcasts to download simultaneously.
         progress_bar_size           The display length of download progress bars.
         exclude                     A case-sensitive regex expression describing which course names to exclude.
-        login_service_url           The URL of the login service.
-        video_service_base_url      The base URL of the video service.
     """
 
     auto_login: bool = False
@@ -24,8 +22,6 @@ class Profile:
     concurrent_downloads: int = 4
     progress_bar_size: int = 30
     exclude: str = ""
-    login_service_url: str = "https://login.manchester.ac.uk/cas/login"
-    video_service_base_url: str = "https://video.manchester.ac.uk"
 
     def load_from_file(self, file_path: str):
         """Loads a settings profile from the specified YAML file.
@@ -56,8 +52,6 @@ class Profile:
         self.load_setting(settings_dict, "concurrent_downloads", int)
         self.load_setting(settings_dict, "progress_bar_size", int)
         self.load_setting(settings_dict, "exclude", str)
-        self.load_setting(settings_dict, "login_service_url", str)
-        self.load_setting(settings_dict, "video_service_base_url", str)
 
     def load_setting(self, settings_dict: dict, setting_name: str, expected_type: type) -> bool:
         """Loads a single setting from a dictionary, if it exists.

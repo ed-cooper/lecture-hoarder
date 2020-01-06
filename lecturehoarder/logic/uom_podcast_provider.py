@@ -14,8 +14,13 @@ class UomPodcastProvider(PodcastProvider):
     Uses the login_service_url and video_service_base_url Profile attributes.
 
     Attributes:
-        session     The current cookie session, used for maintaining state.
+        login_service_url           The URL of the login service.
+        session                     The current cookie session, used for maintaining state.
+        video_service_base_url      The base URL of the video service.
     """
+
+    login_service_url: str = "https://login.manchester.ac.uk/cas/login"
+    video_service_base_url: str = "https://video.manchester.ac.uk"
 
     session: requests.sessions = None
 
@@ -38,7 +43,7 @@ class UomPodcastProvider(PodcastProvider):
         """
 
         # Get login page (to extract hidden params)
-        get_login_service = self.session.get(self.settings_profile.login_service_url)
+        get_login_service = self.session.get(self.login_service_url)
 
         # Check status code valid
         if get_login_service.status_code != 200:
@@ -51,7 +56,7 @@ class UomPodcastProvider(PodcastProvider):
         param_lt = get_login_soup.find("input", {"name": "lt"})["value"]
 
         # Send login request
-        post_login_service = self.session.post(self.settings_profile.login_service_url,
+        post_login_service = self.session.post(self.login_service_url,
                                                {"username": username,
                                                 "password": password,
                                                 "lt": param_lt,
@@ -78,7 +83,7 @@ class UomPodcastProvider(PodcastProvider):
         """
 
         # Get list of courses from video page
-        get_video_service_base = self.session.get(self.settings_profile.video_service_base_url + "/lectures")
+        get_video_service_base = self.session.get(self.video_service_base_url + "/lectures")
 
         # Check status code valid
         if get_video_service_base.status_code != 200:
@@ -102,7 +107,7 @@ class UomPodcastProvider(PodcastProvider):
         :return: A list of URLs for podcasts in the course.
         """
 
-        get_video_service_course = self.session.get(self.settings_profile.video_service_base_url + course.url)
+        get_video_service_course = self.session.get(self.video_service_base_url + course.url)
 
         # Check status code valid
         if get_video_service_course.status_code != 200:
@@ -126,7 +131,7 @@ class UomPodcastProvider(PodcastProvider):
         """
 
         # Get podcast webpage
-        get_video_service_podcast_page = self.session.get(self.settings_profile.video_service_base_url + podcast.url)
+        get_video_service_podcast_page = self.session.get(self.video_service_base_url + podcast.url)
 
         # Check status code valid
         if get_video_service_podcast_page.status_code != 200:
@@ -142,7 +147,7 @@ class UomPodcastProvider(PodcastProvider):
         if not download_button or not download_button["href"]:
             raise PodcastProviderError(f"Could not find download link for podcast {podcast.name}")
 
-        podcast_src = self.settings_profile.video_service_base_url + download_button["href"]
+        podcast_src = self.video_service_base_url + download_button["href"]
 
         # Get podcast
         get_video_service_podcast = self.session.get(podcast_src, stream=True)
