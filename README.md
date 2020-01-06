@@ -13,36 +13,49 @@ This program comes with ABSOLUTELY NO WARRANTY; for details see [the license](LI
 The author accepts no liability for any loss of data caused by this program.
 Please remember to back your files up regularly.
 
-## Usage
+## Installation
 
-First, copy the file `lecture-hoarder-settings.yaml` to your home directory:
+*Requires Python 3.6+*
+
+1) Clone the repository
 ```bash
-cp lecture-hoarder-settings.yaml ~
+git clone git@github.com:ed-cooper/lecture-hoarder.git
 ```
 
-Lecture Hoarder comes with sensible default settings for Linux. By default, podcasts are saved to `~/Documents/Lectures`.
-
-For more configuration options, please see [the wiki page](https://github.com/ed-cooper/lecture-hoarder/wiki/Lecture-Hoarder-Configuration).
-
-Here are some notable settings:
-```yaml
-auto_login: No                   # Whether to use username and password from settings or standard input
-username: ""                     # The username you would usually use for My Manchester
-password: ""                     # The accompanying password
-base_dir: "~/Documents/Lectures" # Where to download files to
-exclude: ""                      # Case-sensitive regular expression; course names matching this will be ignored
+2) Go to the install directory
+```bash
+cd lecture-hoarder
 ```
-Then, install the packages listed in [requirements.txt](requirements.txt):
 
+3) Install the dependencies
 ```bash
 pip3 install -r requirements.txt
 ```
 
-Finally, execute the file called [run.py](run.py) *(requires Python 3.6+)*:
+# Simple Usage
+
+Inside your installation directory, run:
 ```bash
-python3 run.py
+python3 lecturehoarder
 ```
 
+Podcasts are downloaded to `~/Documents/Lectures`.
+
+# Advanced Usage
+
+Lecture Hoarder can be configured by placing a `lecture-hoarder-settings.yaml` file
+in your home directory - e.g. `/home/john/lecture-hoarder-settings.yaml` on Linux.
+
+Configuration options include:
+* Changing the download directory
+* Excluding certain courses from being downloaded
+* Pre-specifying a username / password combination
+* And more
+
+For information on configuration, please see
+[the wiki page](https://github.com/ed-cooper/lecture-hoarder/wiki/Lecture-Hoarder-Configuration).
+
+# Useful Notes
 Podcasts take a long time to download, so the first run may take a while to complete.
 
 If you interrupt the program while downloading, you may find ```.partial``` files in
