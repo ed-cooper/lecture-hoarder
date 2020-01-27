@@ -100,7 +100,7 @@ class UomPodcastProvider(PodcastProvider):
         course_items_html = get_video_service_base_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[3]\
             .find_all("li", {"class": "series"})
 
-        return map(lambda x: Course(x.a.string, x.a["href"]), course_items_html)
+        return map(lambda x: Course(x.a.string, x.a["href"], x.a.string[-7:].replace("/", "-")), course_items_html)
 
     def get_course_podcasts(self, course: Course) -> Iterator[Podcast]:
         """Gets the list of available podcasts for the specified course.

@@ -8,7 +8,9 @@ class Course:
 
     name: str = None
     url: str = None
+    series: str = None
 
-    def __init__(self, name: str, url: str):
+    def __init__(self, name: str, url: str, series: str):
         self.name = name
         self.url = url
+        self.series = series

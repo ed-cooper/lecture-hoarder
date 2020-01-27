@@ -279,7 +279,8 @@ def main() -> None:
         print(f"Getting podcasts for {course.name}")
         print("-" * (21 + len(course.name)))
 
-        course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course.name)))
+        course_dir = os.path.expanduser(os.path.join(settings.base_dir, filter_path_name(course.series),
+                                                     filter_path_name(course.name)))
         os.makedirs(course_dir, exist_ok=True)
 
         try:
