@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Iterator
 
 import requests
@@ -121,10 +122,12 @@ class UomPodcastProvider(PodcastProvider):
         # Success code valid, extract course names
         get_video_service_course_soup = BeautifulSoup(get_video_service_course.content, features="html.parser")
 
-        podcasts_html = get_video_service_course_soup.find("nav", {"id": "sidebar-nav"}).ul.contents[5].find_all("li", {
-            "class": "episode"})
+        podcasts_html = get_video_service_course_soup.find("div", class_="list").find_all("a", class_="outspecify")
 
-        return map(lambda x: Podcast(x.a.string, x.a["href"]), podcasts_html)
+        return map(lambda x: Podcast(
+            x.find("p", class_="title").string,
+            datetime.strptime(x.find("p", class_="date").string, "%a %b %d %X %Z %Y"),
+            x["href"]), podcasts_html)
 
     def get_podcast_downloader(self, podcast: Podcast) -> requests.Response:
         """Gets the HTTP response for the specified podcast download.
