@@ -18,3 +18,8 @@ class Podcast:
         self.name = name
         self.date = date
         self.url = url
+
+    def get_academic_year(self) -> str:
+        """Returns the name of the academic year for the podcast."""
+
+        return str(self.date.year)
